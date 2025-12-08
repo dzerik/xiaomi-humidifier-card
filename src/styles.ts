@@ -289,6 +289,191 @@ export const styles = css`
     color: var(--text-secondary-color);
   }
 
+  /* Numbers row (sliders) */
+  .numbers-row {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px 0;
+    border-top: 1px solid var(--divider-color, #e0e0e0);
+  }
+
+  .number-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 0 8px;
+  }
+
+  .number-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .number-name {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85em;
+    color: var(--text-secondary-color);
+  }
+
+  .number-name ha-icon {
+    --mdc-icon-size: 18px;
+  }
+
+  .number-value {
+    font-size: 0.9em;
+    font-weight: 500;
+    color: var(--text-color);
+    min-width: 50px;
+    text-align: right;
+  }
+
+  .number-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .number-control input[type="range"] {
+    flex: 1;
+    height: 4px;
+    -webkit-appearance: none;
+    background: var(--arc-background);
+    border-radius: 2px;
+    outline: none;
+  }
+
+  .number-control input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    cursor: pointer;
+    border: 2px solid var(--card-background);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+
+  .number-control input[type="range"]::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    cursor: pointer;
+    border: 2px solid var(--card-background);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Selects row (dropdowns) */
+  .selects-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    padding: 12px 0;
+    border-top: 1px solid var(--divider-color, #e0e0e0);
+  }
+
+  .select-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 120px;
+  }
+
+  .select-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .select-name {
+    font-size: 0.85em;
+    color: var(--text-secondary-color);
+  }
+
+  .select-name ha-icon {
+    --mdc-icon-size: 18px;
+  }
+
+  .select-item select {
+    padding: 6px 10px;
+    border: 1px solid var(--divider-color, #e0e0e0);
+    border-radius: 6px;
+    background: var(--ha-card-background, var(--card-background-color, #fff));
+    color: var(--text-color);
+    font-size: 0.9em;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s ease;
+  }
+
+  .select-item select:hover {
+    border-color: var(--primary-color);
+  }
+
+  .select-item select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 1px var(--primary-color);
+  }
+
+  /* Buttons row (action buttons) */
+  .buttons-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 0;
+    border-top: 1px solid var(--divider-color, #e0e0e0);
+  }
+
+  .button-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    background: var(--ha-card-background, var(--card-background-color, #f5f5f5));
+    border: 1px solid var(--divider-color, #e0e0e0);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .button-item:hover {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+  }
+
+  .button-item:hover ha-icon {
+    color: white;
+  }
+
+  .button-item:active {
+    transform: scale(0.95);
+  }
+
+  .button-item ha-icon {
+    color: var(--primary-color);
+    --mdc-icon-size: 24px;
+    transition: color 0.2s ease;
+  }
+
+  .button-name {
+    font-size: 0.75em;
+    text-transform: uppercase;
+    color: var(--text-secondary-color);
+    transition: color 0.2s ease;
+  }
+
+  .button-item:hover .button-name {
+    color: white;
+  }
+
   /* Status indicators */
   .status-indicators {
     display: flex;

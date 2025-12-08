@@ -12,7 +12,15 @@
     "Humidity": "Авто",
     "Auto": "Авто",
     "Silent": "Тихий",
-    "Strong": "Сильный"
+    "Strong": "Сильный",
+    "Favorite": "Любимый",
+    "Nature": "Природа",
+    "Sleep": "Сон",
+    "Fan": "Вентилятор",
+    "Level1": "Уровень 1",
+    "Level2": "Уровень 2",
+    "Level3": "Уровень 3",
+    "Level4": "Уровень 4"
   },
   "switches": {
     "led": "LED",
@@ -20,14 +28,64 @@
     "buzzer": "Звук",
     "child_lock": "Блок",
     "dry": "Сушка",
-    "overwet_protect": "Защита"
+    "overwet_protect": "Защита",
+    "learn_mode": "Обуч",
+    "auto_detect": "Авто",
+    "oscillate": "Вращ",
+    "ptc": "PTC",
+    "display": "Дисплей",
+    "anion": "Ионы",
+    "gestures": "Жесты"
   },
   "sensors": {
     "temperature": "Темп",
     "humidity": "Влажн",
     "water_level": "Вода",
     "motor_speed": "Скор",
-    "use_time": "Время"
+    "use_time": "Время",
+    "aqi": "AQI",
+    "pm25": "PM2.5",
+    "tvoc": "TVOC",
+    "co2": "CO2",
+    "filter_life_remaining": "Фильтр",
+    "filter_hours_used": "Часы фильтра",
+    "filter_left_time": "Ост. фильтр",
+    "clean_area": "Площадь",
+    "clean_time": "Время уборки",
+    "illuminance": "Свет",
+    "illuminance_lux": "Люкс",
+    "fan_level": "Уровень",
+    "favorite_level": "Любим",
+    "average_aqi": "Сред AQI",
+    "purify_volume": "Очищено",
+    "motor2_speed": "Мотор 2",
+    "filter_rfid_product_id": "ID фильтра",
+    "filter_rfid_tag": "Тег фильтра",
+    "power": "Мощность",
+    "voltage": "Напряж",
+    "current": "Ток",
+    "water_shortage": "Нет воды",
+    "depth": "Глуб",
+    "actual_speed": "Скорость",
+    "fault": "Ошибка"
+  },
+  "numbers": {
+    "favorite_level": "Любимый уровень",
+    "fan_level": "Уровень вентилятора",
+    "volume": "Громкость",
+    "target_humidity": "Целевая влажность",
+    "angle": "Угол вращения",
+    "delay_off_countdown": "Таймер выкл"
+  },
+  "selects": {
+    "led_brightness": "Яркость LED",
+    "display_orientation": "Ориентация",
+    "ptc_level": "Уровень PTC",
+    "mode": "Режим"
+  },
+  "buttons": {
+    "reset_filter": "Сбросить фильтр",
+    "filters_cleaned": "Фильтр очищен"
   },
   "status": {
     "water_tank_ok": "Бак ОК",
@@ -42,6 +100,11 @@
     "show_state": "Показывать состояние",
     "show_target_humidity": "Показывать целевую влажность",
     "show_mode": "Показывать кнопки режимов",
+    "show_sensors": "Показывать сенсоры",
+    "show_switches": "Показывать переключатели",
+    "show_numbers": "Показывать слайдеры",
+    "show_selects": "Показывать выпадающие списки",
+    "show_buttons": "Показывать кнопки действий",
     "compact": "Компактный режим"
   }
 }

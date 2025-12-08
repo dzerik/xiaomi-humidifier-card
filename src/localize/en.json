@@ -12,7 +12,15 @@
     "Humidity": "Auto",
     "Auto": "Auto",
     "Silent": "Silent",
-    "Strong": "Strong"
+    "Strong": "Strong",
+    "Favorite": "Favorite",
+    "Nature": "Nature",
+    "Sleep": "Sleep",
+    "Fan": "Fan",
+    "Level1": "Level 1",
+    "Level2": "Level 2",
+    "Level3": "Level 3",
+    "Level4": "Level 4"
   },
   "switches": {
     "led": "LED",
@@ -20,14 +28,64 @@
     "buzzer": "Buzzer",
     "child_lock": "Lock",
     "dry": "Dry",
-    "overwet_protect": "Protect"
+    "overwet_protect": "Protect",
+    "learn_mode": "Learn",
+    "auto_detect": "Auto Detect",
+    "oscillate": "Oscillate",
+    "ptc": "PTC",
+    "display": "Display",
+    "anion": "Ionizer",
+    "gestures": "Gestures"
   },
   "sensors": {
     "temperature": "Temp",
     "humidity": "Humidity",
     "water_level": "Water",
     "motor_speed": "Speed",
-    "use_time": "Time"
+    "use_time": "Time",
+    "aqi": "AQI",
+    "pm25": "PM2.5",
+    "tvoc": "TVOC",
+    "co2": "CO2",
+    "filter_life_remaining": "Filter",
+    "filter_hours_used": "Filter Hours",
+    "filter_left_time": "Filter Left",
+    "clean_area": "Clean Area",
+    "clean_time": "Clean Time",
+    "illuminance": "Light",
+    "illuminance_lux": "Lux",
+    "fan_level": "Fan Level",
+    "favorite_level": "Fav Level",
+    "average_aqi": "Avg AQI",
+    "purify_volume": "Purify Vol",
+    "motor2_speed": "Motor 2",
+    "filter_rfid_product_id": "Filter ID",
+    "filter_rfid_tag": "Filter Tag",
+    "power": "Power",
+    "voltage": "Voltage",
+    "current": "Current",
+    "water_shortage": "Water Shortage",
+    "depth": "Depth",
+    "actual_speed": "Act Speed",
+    "fault": "Fault"
+  },
+  "numbers": {
+    "favorite_level": "Favorite Level",
+    "fan_level": "Fan Level",
+    "volume": "Volume",
+    "target_humidity": "Target Humidity",
+    "angle": "Oscillation Angle",
+    "delay_off_countdown": "Delay Off"
+  },
+  "selects": {
+    "led_brightness": "LED Brightness",
+    "display_orientation": "Display",
+    "ptc_level": "PTC Level",
+    "mode": "Mode"
+  },
+  "buttons": {
+    "reset_filter": "Reset Filter",
+    "filters_cleaned": "Filters Cleaned"
   },
   "status": {
     "water_tank_ok": "Tank OK",
@@ -42,6 +100,11 @@
     "show_state": "Show state",
     "show_target_humidity": "Show target humidity",
     "show_mode": "Show mode buttons",
+    "show_sensors": "Show sensors",
+    "show_switches": "Show switches",
+    "show_numbers": "Show sliders",
+    "show_selects": "Show dropdowns",
+    "show_buttons": "Show action buttons",
     "compact": "Compact mode"
   }
 }

@@ -9,13 +9,16 @@ import {
   SWITCH_DEFINITIONS,
   SENSOR_DEFINITIONS,
   BINARY_SENSOR_DEFINITIONS,
+  NUMBER_DEFINITIONS,
+  SELECT_DEFINITIONS,
+  BUTTON_DEFINITIONS,
 } from './types';
 
 // Import editor component to register it
 import './components/editor';
 
 // Card info for Home Assistant
-const CARD_VERSION = '1.0.4';
+const CARD_VERSION = '1.1.0';
 
 console.info(
   `%c XIAOMI-HUMIDIFIER-CARD %c ${CARD_VERSION} `,
@@ -41,8 +44,6 @@ const defineCustomElement = (name: string, constructor: CustomElementConstructor
   }
 };
 
-// Using manual registration instead of decorator to avoid duplicate registration
-// @customElement('xiaomi-humidifier-card')
 export class XiaomiHumidifierCard extends LitElement {
   static styles = styles;
 
@@ -65,6 +66,11 @@ export class XiaomiHumidifierCard extends LitElement {
       show_target_humidity: true,
       show_mode: true,
       show_power: true,
+      show_sensors: true,
+      show_switches: true,
+      show_numbers: true,
+      show_selects: true,
+      show_buttons: true,
       compact: false,
       ...config,
     };
@@ -136,65 +142,39 @@ export class XiaomiHumidifierCard extends LitElement {
     if (this._config.humidity_entity) {
       const sensor = this.hass?.states[this._config.humidity_entity];
       if (sensor && sensor.state !== 'unavailable' && sensor.state !== 'unknown') {
-        console.debug('[xiaomi-humidifier-card] Found humidity from config entity:', sensor.state);
         return Number(sensor.state);
       }
     }
 
     // Check main entity attributes (skip if null)
     if (attrs?.humidity !== undefined && attrs.humidity !== null) {
-      console.debug('[xiaomi-humidifier-card] Found humidity in attrs:', attrs.humidity);
       return Number(attrs.humidity);
     }
     if (attrs?.current_humidity !== undefined && attrs.current_humidity !== null) {
-      console.debug('[xiaomi-humidifier-card] Found current_humidity in attrs:', attrs.current_humidity);
       return Number(attrs.current_humidity);
     }
 
     // Build base ID from entity
     const deviceId = this._entityId.split('.')[1];
-    // Remove common suffixes to get base device ID
     const baseId = deviceId
       .replace(/_fan$/, '')
       .replace(/_humidifier$/, '')
       .replace(/_air_humidifier$/, '');
 
-    console.debug('[xiaomi-humidifier-card] Looking for humidity sensor, baseId:', baseId);
-
-    // Search for humidity sensor - try multiple patterns
+    // Search for humidity sensor
     for (const entityId of Object.keys(this.hass?.states || {})) {
-      // Match patterns like:
-      // sensor.{baseId}_humidity
-      // sensor.{baseId}_current_humidity
-      // sensor.{device}_humidity where device contains baseId
       if (entityId.startsWith('sensor.') &&
           entityId.includes(baseId) &&
           (entityId.endsWith('_humidity') || entityId.includes('humidity'))) {
         const entity = this.hass.states[entityId];
         if (entity && entity.state !== 'unavailable' && entity.state !== 'unknown') {
-          // Make sure it's actually a humidity value (not target_humidity)
           if (!entityId.includes('target')) {
-            console.debug('[xiaomi-humidifier-card] Found humidity sensor:', entityId, '=', entity.state);
             return Number(entity.state);
           }
         }
       }
     }
 
-    // Fallback: check if main entity has any humidity-related attribute (non-null)
-    for (const key of Object.keys(attrs || {})) {
-      if (key.toLowerCase().includes('humidity') && !key.toLowerCase().includes('target')) {
-        const val = attrs?.[key];
-        if (val !== null && val !== undefined) {
-          if (typeof val === 'number' || (typeof val === 'string' && !isNaN(Number(val)))) {
-            console.debug('[xiaomi-humidifier-card] Found humidity in attr:', key, '=', val);
-            return Number(val);
-          }
-        }
-      }
-    }
-
-    console.debug('[xiaomi-humidifier-card] No humidity found. Entity attrs:', attrs);
     return undefined;
   }
 
@@ -275,12 +255,14 @@ export class XiaomiHumidifierCard extends LitElement {
 
   // Get switches
   private get _switches(): Array<{ id: string; entity: HassEntity; name: string; icon: string }> {
+    if (this._config.show_switches === false) return [];
+
     const switches: Array<{ id: string; entity: HassEntity; name: string; icon: string }> = [];
     const foundEntityIds = new Set<string>();
 
     for (const [key, def] of Object.entries(SWITCH_DEFINITIONS)) {
       const entity = this._findEntity([`switch.${key}`, key]);
-      if (entity && !foundEntityIds.has(entity.entity_id)) {
+      if (entity && !foundEntityIds.has(entity.entity_id) && entity.state !== 'unavailable') {
         foundEntityIds.add(entity.entity_id);
         switches.push({
           id: key,
@@ -296,12 +278,14 @@ export class XiaomiHumidifierCard extends LitElement {
 
   // Get sensors
   private get _sensors(): Array<{ id: string; entity: HassEntity; name: string; icon: string; unit?: string }> {
+    if (this._config.show_sensors === false) return [];
+
     const sensors: Array<{ id: string; entity: HassEntity; name: string; icon: string; unit?: string }> = [];
     const foundEntityIds = new Set<string>();
 
     for (const [key, def] of Object.entries(SENSOR_DEFINITIONS)) {
-      // Skip humidity (shown in circle) and temperature (shown separately)
-      if (key === 'humidity' || key === 'temperature') continue;
+      // Skip humidity (shown in circle), temperature (shown separately), target_humidity and mode
+      if (key === 'humidity' || key === 'temperature' || key === 'target_humidity' || key === 'mode') continue;
 
       const entity = this._findEntity([`sensor.${key}`, key]);
       if (entity && entity.state !== 'unavailable' && entity.state !== 'unknown' && !foundEntityIds.has(entity.entity_id)) {
@@ -319,6 +303,87 @@ export class XiaomiHumidifierCard extends LitElement {
     return sensors;
   }
 
+  // Get number entities (sliders)
+  private get _numbers(): Array<{ id: string; entity: HassEntity; name: string; icon: string; min: number; max: number; step: number; unit?: string }> {
+    if (this._config.show_numbers === false) return [];
+
+    const numbers: Array<{ id: string; entity: HassEntity; name: string; icon: string; min: number; max: number; step: number; unit?: string }> = [];
+    const foundEntityIds = new Set<string>();
+
+    for (const [key, def] of Object.entries(NUMBER_DEFINITIONS)) {
+      // Skip target_humidity (shown in circle)
+      if (key === 'target_humidity') continue;
+
+      const entity = this._findEntity([`number.${key}`, key]);
+      if (entity && entity.state !== 'unavailable' && !foundEntityIds.has(entity.entity_id)) {
+        foundEntityIds.add(entity.entity_id);
+        numbers.push({
+          id: key,
+          entity,
+          name: def.name,
+          icon: def.icon,
+          min: Number(entity.attributes.min ?? def.min),
+          max: Number(entity.attributes.max ?? def.max),
+          step: Number(entity.attributes.step ?? def.step),
+          unit: def.unit,
+        });
+      }
+    }
+
+    return numbers;
+  }
+
+  // Get select entities
+  private get _selects(): Array<{ id: string; entity: HassEntity; name: string; icon: string; options: string[] }> {
+    if (this._config.show_selects === false) return [];
+
+    const selects: Array<{ id: string; entity: HassEntity; name: string; icon: string; options: string[] }> = [];
+    const foundEntityIds = new Set<string>();
+
+    for (const [key, def] of Object.entries(SELECT_DEFINITIONS)) {
+      // Skip mode (shown as buttons)
+      if (key === 'mode') continue;
+
+      const entity = this._findEntity([`select.${key}`, key]);
+      if (entity && entity.state !== 'unavailable' && !foundEntityIds.has(entity.entity_id)) {
+        foundEntityIds.add(entity.entity_id);
+        const options = entity.attributes.options as string[] || def.options || [];
+        selects.push({
+          id: key,
+          entity,
+          name: def.name,
+          icon: def.icon,
+          options,
+        });
+      }
+    }
+
+    return selects;
+  }
+
+  // Get button entities
+  private get _buttons(): Array<{ id: string; entity: HassEntity; name: string; icon: string }> {
+    if (this._config.show_buttons === false) return [];
+
+    const buttons: Array<{ id: string; entity: HassEntity; name: string; icon: string }> = [];
+    const foundEntityIds = new Set<string>();
+
+    for (const [key, def] of Object.entries(BUTTON_DEFINITIONS)) {
+      const entity = this._findEntity([`button.${key}`, key]);
+      if (entity && entity.state !== 'unavailable' && !foundEntityIds.has(entity.entity_id)) {
+        foundEntityIds.add(entity.entity_id);
+        buttons.push({
+          id: key,
+          entity,
+          name: def.name,
+          icon: def.icon,
+        });
+      }
+    }
+
+    return buttons;
+  }
+
   // Get water status from main entity attributes or binary sensors
   private get _waterStatus(): { id: string; isOn: boolean; icon: string } | null {
     const attrs = this._entity?.attributes;
@@ -331,32 +396,23 @@ export class XiaomiHumidifierCard extends LitElement {
     );
 
     if (hasWaterAttrs) {
-      // Use main entity attributes (priority order)
-      // 1. no_water - most critical
       if (attrs?.no_water === true) {
         return { id: 'no_water', isOn: true, icon: 'mdi:water-off' };
       }
-
-      // 2. water_tank_detached
       if (attrs?.water_tank_detached === true) {
         return { id: 'water_tank_detached', isOn: true, icon: 'mdi:cup-off-outline' };
       }
-
-      // 3. water_shortage
       if (attrs?.water_shortage === true) {
         return { id: 'water_shortage', isOn: true, icon: 'mdi:water-alert' };
       }
-
-      // All attributes are false - everything is OK
       return { id: 'water_ok', isOn: false, icon: 'mdi:water-check' };
     }
 
-    // Fallback to binary_sensor entities only if main entity has no water attributes
+    // Fallback to binary_sensor entities
     for (const [key, def] of Object.entries(BINARY_SENSOR_DEFINITIONS)) {
       const entity = this._findEntity([`binary_sensor.${key}`, key]);
       if (entity && entity.state !== 'unavailable') {
         const isOn = entity.state === 'on';
-        // Only return if there's a problem (isOn for shortage/no_water, isOff for tank)
         if ((key === 'no_water' || key === 'water_shortage') && isOn) {
           return { id: key, isOn: true, icon: def.icon_on };
         }
@@ -366,7 +422,6 @@ export class XiaomiHumidifierCard extends LitElement {
       }
     }
 
-    // No water status available
     return { id: 'water_ok', isOn: false, icon: 'mdi:water-check' };
   }
 
@@ -384,7 +439,6 @@ export class XiaomiHumidifierCard extends LitElement {
   private async _handleModeChange(mode: string): Promise<void> {
     if (!this.hass) return;
 
-    // Try fan.set_preset_mode first
     const domain = this._entityId.split('.')[0];
     if (domain === 'fan') {
       await this.hass.callService('fan', 'set_preset_mode', {
@@ -393,7 +447,6 @@ export class XiaomiHumidifierCard extends LitElement {
       return;
     }
 
-    // Try select entity
     const select = this._findEntity(['select.mode', 'mode_select']);
     if (select) {
       await this.hass.callService('select', 'select_option', {
@@ -406,7 +459,6 @@ export class XiaomiHumidifierCard extends LitElement {
   private async _handleTargetHumidityChange(value: number): Promise<void> {
     if (!this.hass) return;
 
-    // Try number entity first
     const number = this._findEntity(['number.target_humidity', 'target_humidity']);
     if (number) {
       await this.hass.callService('number', 'set_value', {
@@ -415,7 +467,6 @@ export class XiaomiHumidifierCard extends LitElement {
       return;
     }
 
-    // Try humidifier service
     await this.hass.callService('humidifier', 'set_humidity', {
       humidity: value,
     }, { entity_id: this._entityId });
@@ -427,6 +478,31 @@ export class XiaomiHumidifierCard extends LitElement {
 
     const service = currentState === 'on' ? 'turn_off' : 'turn_on';
     await this.hass.callService('switch', service, {}, { entity_id: entityId });
+  }
+
+  // Handle number change
+  private async _handleNumberChange(entityId: string, value: number): Promise<void> {
+    if (!this.hass) return;
+
+    await this.hass.callService('number', 'set_value', {
+      value: value,
+    }, { entity_id: entityId });
+  }
+
+  // Handle select change
+  private async _handleSelectChange(entityId: string, option: string): Promise<void> {
+    if (!this.hass) return;
+
+    await this.hass.callService('select', 'select_option', {
+      option: option,
+    }, { entity_id: entityId });
+  }
+
+  // Handle button press
+  private async _handleButtonPress(entityId: string): Promise<void> {
+    if (!this.hass) return;
+
+    await this.hass.callService('button', 'press', {}, { entity_id: entityId });
   }
 
   protected willUpdate(changedProps: PropertyValues): void {
@@ -455,7 +531,7 @@ export class XiaomiHumidifierCard extends LitElement {
       `;
     }
 
-    const name = this._config.name || this._entity?.attributes?.friendly_name || 'Humidifier';
+    const name = this._config.name || (this._entity?.attributes?.friendly_name as string) || 'Humidifier';
     const humidity = this._currentHumidity;
     const targetHumidity = this._targetHumidity;
 
@@ -465,6 +541,9 @@ export class XiaomiHumidifierCard extends LitElement {
         ${this._renderHumidityCircle(humidity, targetHumidity)}
         ${this._config.show_mode ? this._renderModeButtons(lang) : nothing}
         ${this._renderSwitches(lang)}
+        ${this._renderNumbers(lang)}
+        ${this._renderSelects(lang)}
+        ${this._renderButtons(lang)}
         ${this._renderSensors()}
         ${this._renderStatusIndicators(lang)}
       </ha-card>
@@ -494,7 +573,6 @@ export class XiaomiHumidifierCard extends LitElement {
     `;
   }
 
-  // State for dragging
   @state() private _isDragging = false;
   @state() private _tempTarget: number | null = null;
 
@@ -502,14 +580,11 @@ export class XiaomiHumidifierCard extends LitElement {
     const radius = 80;
     const circumference = 2 * Math.PI * radius;
 
-    // Current humidity progress (blue arc)
     const humidityProgress = humidity !== undefined ? (humidity / 100) * circumference : 0;
     const humidityDashOffset = circumference - humidityProgress;
 
-    // Target humidity - use temp target if dragging, otherwise actual target
     const displayTarget = this._tempTarget !== null ? this._tempTarget : target;
 
-    // Target indicator position (small circle on the arc)
     const targetAngle = displayTarget !== undefined
       ? ((displayTarget / 100) * 360 - 90) * (Math.PI / 180)
       : 0;
@@ -527,14 +602,7 @@ export class XiaomiHumidifierCard extends LitElement {
         @mouseleave=${this._handleDragEnd}
       >
         <svg viewBox="0 0 200 200">
-          <!-- Background arc -->
-          <circle
-            class="arc-background"
-            cx="100"
-            cy="100"
-            r="${radius}"
-          />
-          <!-- Current humidity arc -->
+          <circle class="arc-background" cx="100" cy="100" r="${radius}" />
           <circle
             class="arc-progress"
             cx="100"
@@ -543,7 +611,6 @@ export class XiaomiHumidifierCard extends LitElement {
             stroke-dasharray="${circumference}"
             stroke-dashoffset="${humidityDashOffset}"
           />
-          <!-- Target indicator -->
           ${displayTarget !== undefined && this._config.show_target_humidity ? html`
             <circle
               class="target-indicator ${this._isDragging ? 'dragging' : ''}"
@@ -607,17 +674,12 @@ export class XiaomiHumidifierCard extends LitElement {
       clientY = e.clientY;
     }
 
-    // Calculate angle from center
     const angle = Math.atan2(clientY - centerY, clientX - centerX);
-    // Convert to degrees and adjust for starting at top
     let degrees = (angle * 180 / Math.PI) + 90;
     if (degrees < 0) degrees += 360;
 
-    // Convert to humidity percentage (0-360 -> 0-100)
     let humidity = Math.round(degrees / 360 * 100);
-    // Clamp to 30-80 range
     humidity = Math.max(30, Math.min(80, humidity));
-    // Round to nearest 5
     humidity = Math.round(humidity / 5) * 5;
 
     this._tempTarget = humidity;
@@ -645,6 +707,7 @@ export class XiaomiHumidifierCard extends LitElement {
   private _getModeIcon(mode: string): string {
     const icons: { [key: string]: string } = {
       'Low': 'mdi:fan-speed-1',
+      'Mid': 'mdi:fan-speed-2',
       'Medium': 'mdi:fan-speed-2',
       'High': 'mdi:fan-speed-3',
       'Humidity': 'mdi:water-percent',
@@ -668,6 +731,82 @@ export class XiaomiHumidifierCard extends LitElement {
           >
             <ha-icon icon="${sw.icon}"></ha-icon>
             <span class="switch-name">${localize(`switches.${sw.id}`, lang) || sw.name}</span>
+          </div>
+        `)}
+      </div>
+    `;
+  }
+
+  private _renderNumbers(lang: string): TemplateResult | typeof nothing {
+    const numbers = this._numbers;
+    if (numbers.length === 0) return nothing;
+
+    return html`
+      <div class="numbers-row">
+        ${numbers.map(num => html`
+          <div class="number-item">
+            <div class="number-header">
+              <ha-icon icon="${num.icon}"></ha-icon>
+              <span class="number-name">${localize(`numbers.${num.id}`, lang) || num.name}</span>
+            </div>
+            <div class="number-control">
+              <input
+                type="range"
+                min="${num.min}"
+                max="${num.max}"
+                step="${num.step}"
+                .value="${num.entity.state}"
+                @change=${(e: Event) => this._handleNumberChange(num.entity.entity_id, Number((e.target as HTMLInputElement).value))}
+              />
+              <span class="number-value">${num.entity.state}${num.unit || ''}</span>
+            </div>
+          </div>
+        `)}
+      </div>
+    `;
+  }
+
+  private _renderSelects(lang: string): TemplateResult | typeof nothing {
+    const selects = this._selects;
+    if (selects.length === 0) return nothing;
+
+    return html`
+      <div class="selects-row">
+        ${selects.map(sel => html`
+          <div class="select-item">
+            <div class="select-header">
+              <ha-icon icon="${sel.icon}"></ha-icon>
+              <span class="select-name">${localize(`selects.${sel.id}`, lang) || sel.name}</span>
+            </div>
+            <select
+              .value="${sel.entity.state}"
+              @change=${(e: Event) => this._handleSelectChange(sel.entity.entity_id, (e.target as HTMLSelectElement).value)}
+            >
+              ${sel.options.map(opt => html`
+                <option value="${opt}" ?selected=${opt === sel.entity.state}>
+                  ${localize(`select_options.${opt}`, lang) || opt}
+                </option>
+              `)}
+            </select>
+          </div>
+        `)}
+      </div>
+    `;
+  }
+
+  private _renderButtons(lang: string): TemplateResult | typeof nothing {
+    const buttons = this._buttons;
+    if (buttons.length === 0) return nothing;
+
+    return html`
+      <div class="buttons-row">
+        ${buttons.map(btn => html`
+          <div
+            class="button-item"
+            @click=${() => this._handleButtonPress(btn.entity.entity_id)}
+          >
+            <ha-icon icon="${btn.icon}"></ha-icon>
+            <span class="button-name">${localize(`buttons.${btn.id}`, lang) || btn.name}</span>
           </div>
         `)}
       </div>
@@ -704,7 +843,6 @@ export class XiaomiHumidifierCard extends LitElement {
     const waterStatus = this._waterStatus;
     if (!waterStatus) return nothing;
 
-    // Determine status class and translation key
     let statusClass = 'ok';
     let statusKey = 'water_tank_ok';
 
@@ -731,7 +869,6 @@ export class XiaomiHumidifierCard extends LitElement {
     `;
   }
 
-  // Editor support
   public static getConfigElement(): HTMLElement {
     return document.createElement('xiaomi-humidifier-card-editor');
   }
@@ -744,7 +881,6 @@ export class XiaomiHumidifierCard extends LitElement {
   }
 }
 
-// Register the custom element
 defineCustomElement('xiaomi-humidifier-card', XiaomiHumidifierCard);
 
 declare global {
