@@ -4,7 +4,6 @@ import {
   XiaomiHumidifierCardConfig,
   SWITCH_DEFINITIONS,
   SENSOR_DEFINITIONS,
-  BINARY_SENSOR_DEFINITIONS,
   NUMBER_DEFINITIONS,
   SELECT_DEFINITIONS,
   BUTTON_DEFINITIONS,
@@ -94,41 +93,69 @@ export class EntityFinder {
     return this._baseId;
   }
 
-  // Find all related entities
+  // Find all related entities - STRICT matching by baseId
   private _findRelatedEntities(): void {
     this._relatedEntities.clear();
 
     for (const entityId of Object.keys(this._hass.states)) {
       const parts = entityId.split('.');
-      if (parts[1].startsWith(this._baseId)) {
+      const entityName = parts[1];
+
+      // Only match entities that start with our baseId followed by underscore or end with baseId
+      if (entityName.startsWith(this._baseId + '_') || entityName === this._baseId) {
         const domain = parts[0];
-        const suffix = parts[1].replace(this._baseId + '_', '');
+        const suffix = entityName === this._baseId ? '' : entityName.replace(this._baseId + '_', '');
         this._relatedEntities.set(`${domain}.${suffix}`, entityId);
       }
     }
   }
 
-  // Find entity by pattern
-  findEntity(patterns: string[]): HassEntity | undefined {
-    for (const pattern of patterns) {
-      // Check config override first
-      const configKey = `${pattern}_entity` as keyof XiaomiHumidifierCardConfig;
-      if (this._config[configKey]) {
-        const entity = this._hass?.states[this._config[configKey] as string];
-        if (entity) return entity;
-      }
+  /**
+   * Find entity by key - STRICT matching only related entities
+   * @param key - entity key like 'led', 'buzzer', 'temperature'
+   * @param domain - entity domain like 'switch', 'sensor', 'number'
+   */
+  findEntityByKey(key: string, domain: string): HassEntity | undefined {
+    // Check config override first
+    const configKey = `${key}_entity` as keyof XiaomiHumidifierCardConfig;
+    if (this._config[configKey]) {
+      const entity = this._hass?.states[this._config[configKey] as string];
+      if (entity) return entity;
+    }
 
-      // Search in related entities
-      for (const [key, entityId] of this._relatedEntities) {
-        if (key.includes(pattern)) {
-          return this._hass?.states[entityId];
+    // Look for exact match in related entities
+    const exactKey = `${domain}.${key}`;
+    const exactEntityId = this._relatedEntities.get(exactKey);
+    if (exactEntityId) {
+      return this._hass?.states[exactEntityId];
+    }
+
+    // Also try just the key (for cases where suffix matches)
+    for (const [mapKey, entityId] of this._relatedEntities) {
+      if (mapKey === `${domain}.${key}` || mapKey.endsWith(`.${key}`)) {
+        const entity = this._hass?.states[entityId];
+        if (entity && entity.entity_id.split('.')[0] === domain) {
+          return entity;
         }
       }
+    }
 
-      // Search by entity_id pattern
-      for (const entityId of Object.keys(this._hass?.states || {})) {
-        if (entityId.includes(pattern)) {
-          return this._hass.states[entityId];
+    return undefined;
+  }
+
+  // Legacy findEntity for compatibility
+  findEntity(patterns: string[]): HassEntity | undefined {
+    for (const pattern of patterns) {
+      // Parse domain and key from pattern
+      const parts = pattern.split('.');
+      if (parts.length === 2) {
+        const entity = this.findEntityByKey(parts[1], parts[0]);
+        if (entity) return entity;
+      } else {
+        // Just a key, try common domains
+        for (const domain of ['sensor', 'switch', 'number', 'select', 'button', 'binary_sensor']) {
+          const entity = this.findEntityByKey(pattern, domain);
+          if (entity) return entity;
         }
       }
     }
@@ -159,18 +186,10 @@ export class EntityFinder {
       return Number(attrs.relative_humidity);
     }
 
-    // Search for humidity sensor
-    for (const entityId of Object.keys(this._hass?.states || {})) {
-      if (entityId.startsWith('sensor.') &&
-          entityId.includes(this._baseId) &&
-          (entityId.endsWith('_humidity') || entityId.includes('humidity'))) {
-        const entity = this._hass.states[entityId];
-        if (entity && entity.state !== 'unavailable' && entity.state !== 'unknown') {
-          if (!entityId.includes('target')) {
-            return Number(entity.state);
-          }
-        }
-      }
+    // Search for humidity sensor in related entities only
+    const humiditySensor = this.findEntityByKey('humidity', 'sensor');
+    if (humiditySensor && humiditySensor.state !== 'unavailable' && humiditySensor.state !== 'unknown') {
+      return Number(humiditySensor.state);
     }
 
     return undefined;
@@ -183,7 +202,7 @@ export class EntityFinder {
       return Number(attrs.target_humidity);
     }
 
-    const number = this.findEntity(['number.target_humidity', 'target_humidity']);
+    const number = this.findEntityByKey('target_humidity', 'number');
     if (number) {
       return Number(number.state);
     }
@@ -198,8 +217,8 @@ export class EntityFinder {
       return Number(attrs.temperature);
     }
 
-    const sensor = this.findEntity(['sensor.temperature', 'temperature']);
-    if (sensor) {
+    const sensor = this.findEntityByKey('temperature', 'sensor');
+    if (sensor && sensor.state !== 'unavailable' && sensor.state !== 'unknown') {
       return Number(sensor.state);
     }
 
@@ -216,7 +235,7 @@ export class EntityFinder {
       return String(attrs.mode);
     }
 
-    const select = this.findEntity(['select.mode', 'mode_select']);
+    const select = this.findEntityByKey('mode', 'select');
     if (select) {
       return select.state;
     }
@@ -231,7 +250,7 @@ export class EntityFinder {
       return attrs.preset_modes as string[];
     }
 
-    const select = this.findEntity(['select.mode', 'mode_select']);
+    const select = this.findEntityByKey('mode', 'select');
     if (select?.attributes?.options && Array.isArray(select.attributes.options)) {
       return select.attributes.options as string[];
     }
@@ -251,7 +270,7 @@ export class EntityFinder {
     return state === 'unavailable' || state === 'unknown' || !state;
   }
 
-  // Get switches
+  // Get switches - only from related entities
   getSwitches(): SwitchInfo[] {
     if (this._config.show_switches === false) return [];
 
@@ -259,7 +278,7 @@ export class EntityFinder {
     const foundEntityIds = new Set<string>();
 
     for (const [key, def] of Object.entries(SWITCH_DEFINITIONS)) {
-      const entity = this.findEntity([`switch.${key}`, key]);
+      const entity = this.findEntityByKey(key, 'switch');
       if (entity && !foundEntityIds.has(entity.entity_id) && entity.state !== 'unavailable') {
         foundEntityIds.add(entity.entity_id);
         switches.push({
@@ -274,7 +293,7 @@ export class EntityFinder {
     return switches;
   }
 
-  // Get sensors
+  // Get sensors - only from related entities
   getSensors(): SensorInfo[] {
     if (this._config.show_sensors === false) return [];
 
@@ -285,7 +304,7 @@ export class EntityFinder {
       // Skip humidity (shown in circle), temperature (shown separately), target_humidity and mode
       if (key === 'humidity' || key === 'temperature' || key === 'target_humidity' || key === 'mode') continue;
 
-      const entity = this.findEntity([`sensor.${key}`, key]);
+      const entity = this.findEntityByKey(key, 'sensor');
       if (entity && entity.state !== 'unavailable' && entity.state !== 'unknown' && !foundEntityIds.has(entity.entity_id)) {
         foundEntityIds.add(entity.entity_id);
         sensors.push({
@@ -301,7 +320,7 @@ export class EntityFinder {
     return sensors;
   }
 
-  // Get numbers
+  // Get numbers - only from related entities
   getNumbers(): NumberInfo[] {
     if (this._config.show_numbers === false) return [];
 
@@ -312,7 +331,7 @@ export class EntityFinder {
       // Skip target_humidity (shown in circle)
       if (key === 'target_humidity') continue;
 
-      const entity = this.findEntity([`number.${key}`, key]);
+      const entity = this.findEntityByKey(key, 'number');
       if (entity && entity.state !== 'unavailable' && !foundEntityIds.has(entity.entity_id)) {
         foundEntityIds.add(entity.entity_id);
         numbers.push({
@@ -331,7 +350,7 @@ export class EntityFinder {
     return numbers;
   }
 
-  // Get selects
+  // Get selects - only from related entities
   getSelects(): SelectInfo[] {
     if (this._config.show_selects === false) return [];
 
@@ -342,7 +361,7 @@ export class EntityFinder {
       // Skip mode (shown as buttons)
       if (key === 'mode') continue;
 
-      const entity = this.findEntity([`select.${key}`, key]);
+      const entity = this.findEntityByKey(key, 'select');
       if (entity && entity.state !== 'unavailable' && !foundEntityIds.has(entity.entity_id)) {
         foundEntityIds.add(entity.entity_id);
         const options = entity.attributes.options as string[] || def.options || [];
@@ -359,7 +378,7 @@ export class EntityFinder {
     return selects;
   }
 
-  // Get buttons
+  // Get buttons - only from related entities
   getButtons(): ButtonInfo[] {
     if (this._config.show_buttons === false) return [];
 
@@ -367,7 +386,7 @@ export class EntityFinder {
     const foundEntityIds = new Set<string>();
 
     for (const [key, def] of Object.entries(BUTTON_DEFINITIONS)) {
-      const entity = this.findEntity([`button.${key}`, key]);
+      const entity = this.findEntityByKey(key, 'button');
       if (entity && entity.state !== 'unavailable' && !foundEntityIds.has(entity.entity_id)) {
         foundEntityIds.add(entity.entity_id);
         buttons.push({
@@ -382,44 +401,67 @@ export class EntityFinder {
     return buttons;
   }
 
-  // Get water status
+  // Get water status - check both attributes and binary sensors
   getWaterStatus(): WaterStatus | null {
     const attrs = this.entity?.attributes;
 
-    // Check if main entity has water-related attributes
-    const hasWaterAttrs = attrs && (
-      'no_water' in attrs ||
-      'water_tank_detached' in attrs ||
-      'water_shortage' in attrs
-    );
+    // Check main entity attributes for water-related info
+    if (attrs) {
+      // no_water attribute
+      if ('no_water' in attrs) {
+        if (attrs.no_water === true) {
+          return { id: 'no_water', isOn: true, icon: 'mdi:water-off' };
+        }
+      }
 
-    if (hasWaterAttrs) {
-      if (attrs?.no_water === true) {
+      // water_tank_detached attribute
+      if ('water_tank_detached' in attrs) {
+        if (attrs.water_tank_detached === true) {
+          return { id: 'water_tank_detached', isOn: true, icon: 'mdi:cup-off-outline' };
+        }
+      }
+
+      // water_shortage attribute
+      if ('water_shortage' in attrs) {
+        if (attrs.water_shortage === true) {
+          return { id: 'water_shortage', isOn: true, icon: 'mdi:water-alert' };
+        }
+      }
+
+      // If we have ANY water attribute and all are false/ok, show water_ok
+      if ('no_water' in attrs || 'water_tank_detached' in attrs || 'water_shortage' in attrs) {
+        return { id: 'water_ok', isOn: false, icon: 'mdi:water-check' };
+      }
+    }
+
+    // Check binary_sensor entities - only from related entities
+    const noWaterSensor = this.findEntityByKey('no_water', 'binary_sensor');
+    if (noWaterSensor && noWaterSensor.state !== 'unavailable') {
+      if (noWaterSensor.state === 'on') {
         return { id: 'no_water', isOn: true, icon: 'mdi:water-off' };
       }
-      if (attrs?.water_tank_detached === true) {
-        return { id: 'water_tank_detached', isOn: true, icon: 'mdi:cup-off-outline' };
-      }
-      if (attrs?.water_shortage === true) {
+    }
+
+    const waterShortageSensor = this.findEntityByKey('water_shortage', 'binary_sensor');
+    if (waterShortageSensor && waterShortageSensor.state !== 'unavailable') {
+      if (waterShortageSensor.state === 'on') {
         return { id: 'water_shortage', isOn: true, icon: 'mdi:water-alert' };
       }
+    }
+
+    const waterTankSensor = this.findEntityByKey('water_tank', 'binary_sensor');
+    if (waterTankSensor && waterTankSensor.state !== 'unavailable') {
+      if (waterTankSensor.state === 'off') {
+        return { id: 'water_tank_detached', isOn: true, icon: 'mdi:cup-off-outline' };
+      }
+    }
+
+    // If we found any water-related binary_sensor and they're all ok
+    if (noWaterSensor || waterShortageSensor || waterTankSensor) {
       return { id: 'water_ok', isOn: false, icon: 'mdi:water-check' };
     }
 
-    // Fallback to binary_sensor entities
-    for (const [key, def] of Object.entries(BINARY_SENSOR_DEFINITIONS)) {
-      const entity = this.findEntity([`binary_sensor.${key}`, key]);
-      if (entity && entity.state !== 'unavailable') {
-        const isOn = entity.state === 'on';
-        if ((key === 'no_water' || key === 'water_shortage') && isOn) {
-          return { id: key, isOn: true, icon: def.icon_on };
-        }
-        if (key === 'water_tank' && !isOn) {
-          return { id: 'water_tank_detached', isOn: true, icon: def.icon_off };
-        }
-      }
-    }
-
-    return { id: 'water_ok', isOn: false, icon: 'mdi:water-check' };
+    // No water-related sensors found - return null (don't show status)
+    return null;
   }
 }
