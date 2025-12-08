@@ -133,28 +133,56 @@ export class XiaomiHumidifierCard extends LitElement {
     // First check main entity attributes
     const attrs = this._entity?.attributes;
     if (attrs?.humidity !== undefined) {
+      console.debug('[xiaomi-humidifier-card] Found humidity in attrs:', attrs.humidity);
       return Number(attrs.humidity);
     }
     if (attrs?.current_humidity !== undefined) {
+      console.debug('[xiaomi-humidifier-card] Found current_humidity in attrs:', attrs.current_humidity);
       return Number(attrs.current_humidity);
     }
 
-    // Search for humidity sensor - try multiple patterns
+    // Build base ID from entity
     const deviceId = this._entityId.split('.')[1];
-    const baseId = deviceId.replace(/_fan$/, '').replace(/_humidifier$/, '');
+    // Remove common suffixes to get base device ID
+    const baseId = deviceId
+      .replace(/_fan$/, '')
+      .replace(/_humidifier$/, '')
+      .replace(/_air_humidifier$/, '');
 
-    // Search directly in hass states for humidity sensor
+    console.debug('[xiaomi-humidifier-card] Looking for humidity sensor, baseId:', baseId);
+
+    // Search for humidity sensor - try multiple patterns
     for (const entityId of Object.keys(this.hass?.states || {})) {
+      // Match patterns like:
+      // sensor.{baseId}_humidity
+      // sensor.{baseId}_current_humidity
+      // sensor.{device}_humidity where device contains baseId
       if (entityId.startsWith('sensor.') &&
           entityId.includes(baseId) &&
-          entityId.endsWith('_humidity')) {
+          (entityId.endsWith('_humidity') || entityId.includes('humidity'))) {
         const entity = this.hass.states[entityId];
         if (entity && entity.state !== 'unavailable' && entity.state !== 'unknown') {
-          return Number(entity.state);
+          // Make sure it's actually a humidity value (not target_humidity)
+          if (!entityId.includes('target')) {
+            console.debug('[xiaomi-humidifier-card] Found humidity sensor:', entityId, '=', entity.state);
+            return Number(entity.state);
+          }
         }
       }
     }
 
+    // Fallback: check if main entity has any humidity-related attribute
+    for (const key of Object.keys(attrs || {})) {
+      if (key.toLowerCase().includes('humidity') && !key.toLowerCase().includes('target')) {
+        const val = attrs?.[key];
+        if (typeof val === 'number' || (typeof val === 'string' && !isNaN(Number(val)))) {
+          console.debug('[xiaomi-humidifier-card] Found humidity in attr:', key, '=', val);
+          return Number(val);
+        }
+      }
+    }
+
+    console.debug('[xiaomi-humidifier-card] No humidity found. Entity attrs:', attrs);
     return undefined;
   }
 
