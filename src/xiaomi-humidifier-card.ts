@@ -11,6 +11,9 @@ import {
   BINARY_SENSOR_DEFINITIONS,
 } from './types';
 
+// Import editor component to register it
+import './components/editor';
+
 // Card info for Home Assistant
 const CARD_VERSION = '1.0.0';
 
