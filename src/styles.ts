@@ -73,6 +73,35 @@ export const styles = css`
     transition: stroke-dashoffset 0.3s ease;
   }
 
+  .humidity-circle .target-indicator {
+    fill: var(--primary-color);
+    stroke: var(--card-background);
+    stroke-width: 3;
+    cursor: grab;
+    transition: r 0.2s ease, fill 0.2s ease;
+    transform-origin: center;
+  }
+
+  .humidity-circle .target-indicator:hover {
+    r: 12;
+  }
+
+  .humidity-circle .target-indicator.dragging {
+    r: 14;
+    fill: var(--secondary-color);
+    cursor: grabbing;
+  }
+
+  .humidity-circle {
+    cursor: pointer;
+    touch-action: none;
+  }
+
+  .humidity-circle .target-humidity.dragging {
+    color: var(--primary-color);
+    font-weight: 500;
+  }
+
   .humidity-circle .center-content {
     position: absolute;
     top: 50%;

@@ -125,11 +125,24 @@ export class XiaomiHumidifierCard extends LitElement {
     if (attrs?.humidity !== undefined) {
       return Number(attrs.humidity);
     }
+    if (attrs?.current_humidity !== undefined) {
+      return Number(attrs.current_humidity);
+    }
 
-    // Search for humidity sensor
-    const sensor = this._findEntity(['sensor.humidity', 'humidity']);
-    if (sensor) {
-      return Number(sensor.state);
+    // Search for humidity sensor - try multiple patterns
+    const deviceId = this._entityId.split('.')[1];
+    const baseId = deviceId.replace(/_fan$/, '').replace(/_humidifier$/, '');
+
+    // Search directly in hass states for humidity sensor
+    for (const entityId of Object.keys(this.hass?.states || {})) {
+      if (entityId.startsWith('sensor.') &&
+          entityId.includes(baseId) &&
+          entityId.endsWith('_humidity')) {
+        const entity = this.hass.states[entityId];
+        if (entity && entity.state !== 'unavailable' && entity.state !== 'unknown') {
+          return Number(entity.state);
+        }
+      }
     }
 
     return undefined;
@@ -213,10 +226,12 @@ export class XiaomiHumidifierCard extends LitElement {
   // Get switches
   private get _switches(): Array<{ id: string; entity: HassEntity; name: string; icon: string }> {
     const switches: Array<{ id: string; entity: HassEntity; name: string; icon: string }> = [];
+    const foundEntityIds = new Set<string>();
 
     for (const [key, def] of Object.entries(SWITCH_DEFINITIONS)) {
       const entity = this._findEntity([`switch.${key}`, key]);
-      if (entity) {
+      if (entity && !foundEntityIds.has(entity.entity_id)) {
+        foundEntityIds.add(entity.entity_id);
         switches.push({
           id: key,
           entity,
@@ -232,13 +247,15 @@ export class XiaomiHumidifierCard extends LitElement {
   // Get sensors
   private get _sensors(): Array<{ id: string; entity: HassEntity; name: string; icon: string; unit?: string }> {
     const sensors: Array<{ id: string; entity: HassEntity; name: string; icon: string; unit?: string }> = [];
+    const foundEntityIds = new Set<string>();
 
     for (const [key, def] of Object.entries(SENSOR_DEFINITIONS)) {
-      // Skip humidity (shown in circle) and already shown values
-      if (key === 'humidity') continue;
+      // Skip humidity (shown in circle) and temperature (shown separately)
+      if (key === 'humidity' || key === 'temperature') continue;
 
       const entity = this._findEntity([`sensor.${key}`, key]);
-      if (entity && entity.state !== 'unavailable' && entity.state !== 'unknown') {
+      if (entity && entity.state !== 'unavailable' && entity.state !== 'unknown' && !foundEntityIds.has(entity.entity_id)) {
+        foundEntityIds.add(entity.entity_id);
         sensors.push({
           id: key,
           entity,
@@ -366,7 +383,6 @@ export class XiaomiHumidifierCard extends LitElement {
       <ha-card>
         ${this._renderHeader(name, lang)}
         ${this._renderHumidityCircle(humidity, targetHumidity)}
-        ${this._config.show_target_humidity ? this._renderTargetSlider(targetHumidity) : nothing}
         ${this._config.show_mode ? this._renderModeButtons(lang) : nothing}
         ${this._renderSwitches(lang)}
         ${this._renderSensors()}
@@ -398,29 +414,64 @@ export class XiaomiHumidifierCard extends LitElement {
     `;
   }
 
+  // State for dragging
+  @state() private _isDragging = false;
+  @state() private _tempTarget: number | null = null;
+
   private _renderHumidityCircle(humidity: number | undefined, target: number | undefined): TemplateResult {
     const radius = 80;
     const circumference = 2 * Math.PI * radius;
-    const progress = humidity !== undefined ? (humidity / 100) * circumference : 0;
-    const dashOffset = circumference - progress;
+
+    // Current humidity progress (blue arc)
+    const humidityProgress = humidity !== undefined ? (humidity / 100) * circumference : 0;
+    const humidityDashOffset = circumference - humidityProgress;
+
+    // Target humidity - use temp target if dragging, otherwise actual target
+    const displayTarget = this._tempTarget !== null ? this._tempTarget : target;
+
+    // Target indicator position (small circle on the arc)
+    const targetAngle = displayTarget !== undefined
+      ? ((displayTarget / 100) * 360 - 90) * (Math.PI / 180)
+      : 0;
+    const targetX = displayTarget !== undefined ? 100 + radius * Math.cos(targetAngle) : 0;
+    const targetY = displayTarget !== undefined ? 100 + radius * Math.sin(targetAngle) : 0;
 
     return html`
-      <div class="humidity-circle">
+      <div class="humidity-circle"
+        @mousedown=${this._handleDragStart}
+        @touchstart=${this._handleDragStart}
+        @mousemove=${this._handleDrag}
+        @touchmove=${this._handleDrag}
+        @mouseup=${this._handleDragEnd}
+        @touchend=${this._handleDragEnd}
+        @mouseleave=${this._handleDragEnd}
+      >
         <svg viewBox="0 0 200 200">
+          <!-- Background arc -->
           <circle
             class="arc-background"
             cx="100"
             cy="100"
             r="${radius}"
           />
+          <!-- Current humidity arc -->
           <circle
             class="arc-progress"
             cx="100"
             cy="100"
             r="${radius}"
             stroke-dasharray="${circumference}"
-            stroke-dashoffset="${dashOffset}"
+            stroke-dashoffset="${humidityDashOffset}"
           />
+          <!-- Target indicator -->
+          ${displayTarget !== undefined && this._config.show_target_humidity ? html`
+            <circle
+              class="target-indicator ${this._isDragging ? 'dragging' : ''}"
+              cx="${targetX}"
+              cy="${targetY}"
+              r="10"
+            />
+          ` : nothing}
         </svg>
         <div class="center-content">
           <ha-icon class="humidity-icon" icon="mdi:water-percent"></ha-icon>
@@ -428,9 +479,9 @@ export class XiaomiHumidifierCard extends LitElement {
             ${humidity !== undefined ? humidity : '--'}
             <span class="humidity-unit">%</span>
           </div>
-          ${target !== undefined ? html`
-            <div class="target-humidity">
-              ${localize('common.target', getLanguage(this.hass))}: ${target}%
+          ${displayTarget !== undefined && this._config.show_target_humidity ? html`
+            <div class="target-humidity ${this._isDragging ? 'dragging' : ''}">
+              ${localize('common.target', getLanguage(this.hass))}: ${displayTarget}%
             </div>
           ` : nothing}
         </div>
@@ -438,28 +489,58 @@ export class XiaomiHumidifierCard extends LitElement {
     `;
   }
 
-  private _renderTargetSlider(target: number | undefined): TemplateResult {
-    const value = target ?? 50;
+  private _handleDragStart(e: MouseEvent | TouchEvent): void {
+    if (!this._config.show_target_humidity) return;
+    this._isDragging = true;
+    this._updateTargetFromEvent(e);
+  }
 
-    return html`
-      <div class="target-slider">
-        <ha-icon-button @click=${() => this._handleTargetHumidityChange(Math.max(30, value - 5))}>
-          <ha-icon icon="mdi:minus"></ha-icon>
-        </ha-icon-button>
-        <input
-          type="range"
-          min="30"
-          max="80"
-          step="5"
-          .value=${String(value)}
-          @change=${(e: Event) => this._handleTargetHumidityChange(Number((e.target as HTMLInputElement).value))}
-        />
-        <ha-icon-button @click=${() => this._handleTargetHumidityChange(Math.min(80, value + 5))}>
-          <ha-icon icon="mdi:plus"></ha-icon>
-        </ha-icon-button>
-        <span class="value">${value}%</span>
-      </div>
-    `;
+  private _handleDrag(e: MouseEvent | TouchEvent): void {
+    if (!this._isDragging) return;
+    e.preventDefault();
+    this._updateTargetFromEvent(e);
+  }
+
+  private _handleDragEnd(): void {
+    if (!this._isDragging) return;
+    this._isDragging = false;
+    if (this._tempTarget !== null) {
+      this._handleTargetHumidityChange(this._tempTarget);
+      this._tempTarget = null;
+    }
+  }
+
+  private _updateTargetFromEvent(e: MouseEvent | TouchEvent): void {
+    const circle = (e.currentTarget as HTMLElement).querySelector('svg');
+    if (!circle) return;
+
+    const rect = circle.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+
+    let clientX: number, clientY: number;
+    if ('touches' in e) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    }
+
+    // Calculate angle from center
+    const angle = Math.atan2(clientY - centerY, clientX - centerX);
+    // Convert to degrees and adjust for starting at top
+    let degrees = (angle * 180 / Math.PI) + 90;
+    if (degrees < 0) degrees += 360;
+
+    // Convert to humidity percentage (0-360 -> 0-100)
+    let humidity = Math.round(degrees / 360 * 100);
+    // Clamp to 30-80 range
+    humidity = Math.max(30, Math.min(80, humidity));
+    // Round to nearest 5
+    humidity = Math.round(humidity / 5) * 5;
+
+    this._tempTarget = humidity;
   }
 
   private _renderModeButtons(lang: string): TemplateResult {
@@ -547,16 +628,25 @@ export class XiaomiHumidifierCard extends LitElement {
       <div class="status-indicators">
         ${binarySensors.map(sensor => {
           let statusClass = 'ok';
-          if (sensor.id.includes('shortage') || sensor.id.includes('no_water')) {
-            statusClass = sensor.isOn ? 'error' : 'ok';
-          } else if (sensor.id === 'water_tank') {
+          let statusKey = '';
+
+          if (sensor.id === 'water_tank') {
             statusClass = sensor.isOn ? 'ok' : 'warning';
+            statusKey = sensor.isOn ? 'water_tank_ok' : 'water_tank_missing';
+          } else if (sensor.id === 'water_shortage') {
+            statusClass = sensor.isOn ? 'error' : 'ok';
+            statusKey = sensor.isOn ? 'water_shortage' : 'water_tank_ok';
+          } else if (sensor.id === 'no_water') {
+            statusClass = sensor.isOn ? 'error' : 'ok';
+            statusKey = sensor.isOn ? 'no_water' : 'water_tank_ok';
           }
+
+          const translatedText = localize(`status.${statusKey}`, lang);
 
           return html`
             <div class="status-indicator ${statusClass}">
               <ha-icon icon="${sensor.icon}"></ha-icon>
-              <span>${localize(`status.${sensor.id}${sensor.isOn ? '' : '_missing'}`, lang) || sensor.name}</span>
+              <span>${translatedText || sensor.name}</span>
             </div>
           `;
         })}
