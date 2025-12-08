@@ -15,7 +15,7 @@ import {
 import './components/editor';
 
 // Card info for Home Assistant
-const CARD_VERSION = '1.0.3';
+const CARD_VERSION = '1.0.4';
 
 console.info(
   `%c XIAOMI-HUMIDIFIER-CARD %c ${CARD_VERSION} `,
@@ -323,23 +323,35 @@ export class XiaomiHumidifierCard extends LitElement {
   private get _waterStatus(): { id: string; isOn: boolean; icon: string } | null {
     const attrs = this._entity?.attributes;
 
-    // Check main entity attributes first (priority order)
-    // 1. no_water - most critical
-    if (attrs?.no_water === true) {
-      return { id: 'no_water', isOn: true, icon: 'mdi:water-off' };
+    // Check if main entity has water-related attributes
+    const hasWaterAttrs = attrs && (
+      'no_water' in attrs ||
+      'water_tank_detached' in attrs ||
+      'water_shortage' in attrs
+    );
+
+    if (hasWaterAttrs) {
+      // Use main entity attributes (priority order)
+      // 1. no_water - most critical
+      if (attrs?.no_water === true) {
+        return { id: 'no_water', isOn: true, icon: 'mdi:water-off' };
+      }
+
+      // 2. water_tank_detached
+      if (attrs?.water_tank_detached === true) {
+        return { id: 'water_tank_detached', isOn: true, icon: 'mdi:cup-off-outline' };
+      }
+
+      // 3. water_shortage
+      if (attrs?.water_shortage === true) {
+        return { id: 'water_shortage', isOn: true, icon: 'mdi:water-alert' };
+      }
+
+      // All attributes are false - everything is OK
+      return { id: 'water_ok', isOn: false, icon: 'mdi:water-check' };
     }
 
-    // 2. water_tank_detached
-    if (attrs?.water_tank_detached === true) {
-      return { id: 'water_tank_detached', isOn: true, icon: 'mdi:cup-off-outline' };
-    }
-
-    // 3. water_shortage
-    if (attrs?.water_shortage === true) {
-      return { id: 'water_shortage', isOn: true, icon: 'mdi:water-alert' };
-    }
-
-    // Check binary_sensor entities as fallback
+    // Fallback to binary_sensor entities only if main entity has no water attributes
     for (const [key, def] of Object.entries(BINARY_SENSOR_DEFINITIONS)) {
       const entity = this._findEntity([`binary_sensor.${key}`, key]);
       if (entity && entity.state !== 'unavailable') {
@@ -354,7 +366,7 @@ export class XiaomiHumidifierCard extends LitElement {
       }
     }
 
-    // Everything is OK - show positive status
+    // No water status available
     return { id: 'water_ok', isOn: false, icon: 'mdi:water-check' };
   }
 
