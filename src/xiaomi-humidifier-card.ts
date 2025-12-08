@@ -15,7 +15,7 @@ import {
 import './components/editor';
 
 // Card info for Home Assistant
-const CARD_VERSION = '1.0.0';
+const CARD_VERSION = '1.0.1';
 
 console.info(
   `%c XIAOMI-HUMIDIFIER-CARD %c ${CARD_VERSION} `,
