@@ -15,7 +15,7 @@ import {
 import './components/editor';
 
 // Card info for Home Assistant
-const CARD_VERSION = '1.0.2';
+const CARD_VERSION = '1.0.3';
 
 console.info(
   `%c XIAOMI-HUMIDIFIER-CARD %c ${CARD_VERSION} `,
@@ -319,25 +319,43 @@ export class XiaomiHumidifierCard extends LitElement {
     return sensors;
   }
 
-  // Get binary sensors (status indicators)
-  private get _binarySensors(): Array<{ id: string; entity: HassEntity; name: string; isOn: boolean; icon: string }> {
-    const sensors: Array<{ id: string; entity: HassEntity; name: string; isOn: boolean; icon: string }> = [];
+  // Get water status from main entity attributes or binary sensors
+  private get _waterStatus(): { id: string; isOn: boolean; icon: string } | null {
+    const attrs = this._entity?.attributes;
 
+    // Check main entity attributes first (priority order)
+    // 1. no_water - most critical
+    if (attrs?.no_water === true) {
+      return { id: 'no_water', isOn: true, icon: 'mdi:water-off' };
+    }
+
+    // 2. water_tank_detached
+    if (attrs?.water_tank_detached === true) {
+      return { id: 'water_tank_detached', isOn: true, icon: 'mdi:cup-off-outline' };
+    }
+
+    // 3. water_shortage
+    if (attrs?.water_shortage === true) {
+      return { id: 'water_shortage', isOn: true, icon: 'mdi:water-alert' };
+    }
+
+    // Check binary_sensor entities as fallback
     for (const [key, def] of Object.entries(BINARY_SENSOR_DEFINITIONS)) {
       const entity = this._findEntity([`binary_sensor.${key}`, key]);
       if (entity && entity.state !== 'unavailable') {
         const isOn = entity.state === 'on';
-        sensors.push({
-          id: key,
-          entity,
-          name: def.name,
-          isOn,
-          icon: isOn ? def.icon_on : def.icon_off,
-        });
+        // Only return if there's a problem (isOn for shortage/no_water, isOff for tank)
+        if ((key === 'no_water' || key === 'water_shortage') && isOn) {
+          return { id: key, isOn: true, icon: def.icon_on };
+        }
+        if (key === 'water_tank' && !isOn) {
+          return { id: 'water_tank_detached', isOn: true, icon: def.icon_off };
+        }
       }
     }
 
-    return sensors;
+    // Everything is OK - show positive status
+    return { id: 'water_ok', isOn: false, icon: 'mdi:water-check' };
   }
 
   // Handle power toggle
@@ -671,35 +689,32 @@ export class XiaomiHumidifierCard extends LitElement {
   }
 
   private _renderStatusIndicators(lang: string): TemplateResult | typeof nothing {
-    const binarySensors = this._binarySensors;
-    if (binarySensors.length === 0) return nothing;
+    const waterStatus = this._waterStatus;
+    if (!waterStatus) return nothing;
+
+    // Determine status class and translation key
+    let statusClass = 'ok';
+    let statusKey = 'water_tank_ok';
+
+    if (waterStatus.id === 'no_water') {
+      statusClass = 'error';
+      statusKey = 'no_water';
+    } else if (waterStatus.id === 'water_tank_detached') {
+      statusClass = 'warning';
+      statusKey = 'water_tank_missing';
+    } else if (waterStatus.id === 'water_shortage') {
+      statusClass = 'error';
+      statusKey = 'water_shortage';
+    }
+
+    const translatedText = localize(`status.${statusKey}`, lang);
 
     return html`
       <div class="status-indicators">
-        ${binarySensors.map(sensor => {
-          let statusClass = 'ok';
-          let statusKey = '';
-
-          if (sensor.id === 'water_tank') {
-            statusClass = sensor.isOn ? 'ok' : 'warning';
-            statusKey = sensor.isOn ? 'water_tank_ok' : 'water_tank_missing';
-          } else if (sensor.id === 'water_shortage') {
-            statusClass = sensor.isOn ? 'error' : 'ok';
-            statusKey = sensor.isOn ? 'water_shortage' : 'water_tank_ok';
-          } else if (sensor.id === 'no_water') {
-            statusClass = sensor.isOn ? 'error' : 'ok';
-            statusKey = sensor.isOn ? 'no_water' : 'water_tank_ok';
-          }
-
-          const translatedText = localize(`status.${statusKey}`, lang);
-
-          return html`
-            <div class="status-indicator ${statusClass}">
-              <ha-icon icon="${sensor.icon}"></ha-icon>
-              <span>${translatedText || sensor.name}</span>
-            </div>
-          `;
-        })}
+        <div class="status-indicator ${statusClass}">
+          <ha-icon icon="${waterStatus.icon}"></ha-icon>
+          <span>${translatedText}</span>
+        </div>
       </div>
     `;
   }
