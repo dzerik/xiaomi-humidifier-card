@@ -1,9 +1,15 @@
 import { LitElement, html, css, TemplateResult } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { property, state } from 'lit/decorators.js';
 import { HomeAssistant, XiaomiHumidifierCardConfig } from '../types';
 import { localize, getLanguage } from '../localize/localize';
 
-@customElement('xiaomi-humidifier-card-editor')
+// Manual registration to avoid duplicate definition errors
+const defineEditorElement = (name: string, constructor: CustomElementConstructor) => {
+  if (!customElements.get(name)) {
+    customElements.define(name, constructor);
+  }
+};
+
 export class XiaomiHumidifierCardEditor extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @state() private _config!: XiaomiHumidifierCardConfig;
@@ -192,6 +198,9 @@ export class XiaomiHumidifierCardEditor extends LitElement {
     `;
   }
 }
+
+// Register the editor element
+defineEditorElement('xiaomi-humidifier-card-editor', XiaomiHumidifierCardEditor);
 
 declare global {
   interface HTMLElementTagNameMap {

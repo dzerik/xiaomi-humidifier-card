@@ -1,5 +1,5 @@
 import { LitElement, html, PropertyValues, TemplateResult, nothing } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { property, state } from 'lit/decorators.js';
 import { styles } from './styles';
 import { localize, getLanguage } from './localize/localize';
 import {
@@ -25,14 +25,24 @@ console.info(
 
 // Register card with Home Assistant
 (window as any).customCards = (window as any).customCards || [];
-(window as any).customCards.push({
-  type: 'xiaomi-humidifier-card',
-  name: 'Xiaomi Humidifier Card',
-  description: 'Thermostat-style card for Xiaomi humidifiers',
-  preview: true,
-});
+if (!(window as any).customCards.find((c: { type: string }) => c.type === 'xiaomi-humidifier-card')) {
+  (window as any).customCards.push({
+    type: 'xiaomi-humidifier-card',
+    name: 'Xiaomi Humidifier Card',
+    description: 'Thermostat-style card for Xiaomi humidifiers',
+    preview: true,
+  });
+}
 
-@customElement('xiaomi-humidifier-card')
+// Only define if not already defined
+const defineCustomElement = (name: string, constructor: CustomElementConstructor) => {
+  if (!customElements.get(name)) {
+    customElements.define(name, constructor);
+  }
+};
+
+// Using manual registration instead of decorator to avoid duplicate registration
+// @customElement('xiaomi-humidifier-card')
 export class XiaomiHumidifierCard extends LitElement {
   static styles = styles;
 
@@ -666,6 +676,9 @@ export class XiaomiHumidifierCard extends LitElement {
     };
   }
 }
+
+// Register the custom element
+defineCustomElement('xiaomi-humidifier-card', XiaomiHumidifierCard);
 
 declare global {
   interface HTMLElementTagNameMap {
