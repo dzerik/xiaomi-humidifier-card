@@ -1,0 +1,47 @@
+{
+  "common": {
+    "unavailable": "Недоступно",
+    "on": "Вкл",
+    "off": "Выкл",
+    "target": "Цель"
+  },
+  "modes": {
+    "Low": "Низкий",
+    "Medium": "Средний",
+    "High": "Высокий",
+    "Humidity": "Авто",
+    "Auto": "Авто",
+    "Silent": "Тихий",
+    "Strong": "Сильный"
+  },
+  "switches": {
+    "led": "LED",
+    "led_light": "LED",
+    "buzzer": "Звук",
+    "child_lock": "Блок",
+    "dry": "Сушка",
+    "overwet_protect": "Защита"
+  },
+  "sensors": {
+    "temperature": "Темп",
+    "humidity": "Влажн",
+    "water_level": "Вода",
+    "motor_speed": "Скор",
+    "use_time": "Время"
+  },
+  "status": {
+    "water_tank_ok": "Бак ОК",
+    "water_tank_missing": "Нет бака",
+    "water_shortage": "Долейте воду",
+    "no_water": "Нет воды"
+  },
+  "editor": {
+    "entity": "Объект (обязательно)",
+    "name": "Название (опционально)",
+    "show_name": "Показывать название",
+    "show_state": "Показывать состояние",
+    "show_target_humidity": "Показывать целевую влажность",
+    "show_mode": "Показывать кнопки режимов",
+    "compact": "Компактный режим"
+  }
+}

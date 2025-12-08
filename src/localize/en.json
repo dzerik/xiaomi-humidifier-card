@@ -1,0 +1,47 @@
+{
+  "common": {
+    "unavailable": "Unavailable",
+    "on": "On",
+    "off": "Off",
+    "target": "Target"
+  },
+  "modes": {
+    "Low": "Low",
+    "Medium": "Medium",
+    "High": "High",
+    "Humidity": "Auto",
+    "Auto": "Auto",
+    "Silent": "Silent",
+    "Strong": "Strong"
+  },
+  "switches": {
+    "led": "LED",
+    "led_light": "LED",
+    "buzzer": "Buzzer",
+    "child_lock": "Lock",
+    "dry": "Dry",
+    "overwet_protect": "Protect"
+  },
+  "sensors": {
+    "temperature": "Temp",
+    "humidity": "Humidity",
+    "water_level": "Water",
+    "motor_speed": "Speed",
+    "use_time": "Time"
+  },
+  "status": {
+    "water_tank_ok": "Tank OK",
+    "water_tank_missing": "No Tank",
+    "water_shortage": "Add Water",
+    "no_water": "No Water"
+  },
+  "editor": {
+    "entity": "Entity (required)",
+    "name": "Name (optional)",
+    "show_name": "Show name",
+    "show_state": "Show state",
+    "show_target_humidity": "Show target humidity",
+    "show_mode": "Show mode buttons",
+    "compact": "Compact mode"
+  }
+}
