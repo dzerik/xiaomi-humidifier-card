@@ -15,7 +15,7 @@ import {
 import './components/editor';
 
 // Card info for Home Assistant
-const CARD_VERSION = '1.0.1';
+const CARD_VERSION = '1.0.2';
 
 console.info(
   `%c XIAOMI-HUMIDIFIER-CARD %c ${CARD_VERSION} `,
@@ -130,13 +130,23 @@ export class XiaomiHumidifierCard extends LitElement {
 
   // Get current humidity
   private get _currentHumidity(): number | undefined {
-    // First check main entity attributes
     const attrs = this._entity?.attributes;
-    if (attrs?.humidity !== undefined) {
+
+    // Check config override for humidity entity first
+    if (this._config.humidity_entity) {
+      const sensor = this.hass?.states[this._config.humidity_entity];
+      if (sensor && sensor.state !== 'unavailable' && sensor.state !== 'unknown') {
+        console.debug('[xiaomi-humidifier-card] Found humidity from config entity:', sensor.state);
+        return Number(sensor.state);
+      }
+    }
+
+    // Check main entity attributes (skip if null)
+    if (attrs?.humidity !== undefined && attrs.humidity !== null) {
       console.debug('[xiaomi-humidifier-card] Found humidity in attrs:', attrs.humidity);
       return Number(attrs.humidity);
     }
-    if (attrs?.current_humidity !== undefined) {
+    if (attrs?.current_humidity !== undefined && attrs.current_humidity !== null) {
       console.debug('[xiaomi-humidifier-card] Found current_humidity in attrs:', attrs.current_humidity);
       return Number(attrs.current_humidity);
     }
@@ -171,13 +181,15 @@ export class XiaomiHumidifierCard extends LitElement {
       }
     }
 
-    // Fallback: check if main entity has any humidity-related attribute
+    // Fallback: check if main entity has any humidity-related attribute (non-null)
     for (const key of Object.keys(attrs || {})) {
       if (key.toLowerCase().includes('humidity') && !key.toLowerCase().includes('target')) {
         const val = attrs?.[key];
-        if (typeof val === 'number' || (typeof val === 'string' && !isNaN(Number(val)))) {
-          console.debug('[xiaomi-humidifier-card] Found humidity in attr:', key, '=', val);
-          return Number(val);
+        if (val !== null && val !== undefined) {
+          if (typeof val === 'number' || (typeof val === 'string' && !isNaN(Number(val)))) {
+            console.debug('[xiaomi-humidifier-card] Found humidity in attr:', key, '=', val);
+            return Number(val);
+          }
         }
       }
     }
