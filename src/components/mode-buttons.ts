@@ -19,6 +19,7 @@ const MODE_ICONS: { [key: string]: string } = {
   'Level2': 'mdi:numeric-2-circle',
   'Level3': 'mdi:numeric-3-circle',
   'Level4': 'mdi:numeric-4-circle',
+  'WetAndProtect': 'mdi:shield-water',
 };
 
 export class ModeButtons extends LitElement {
@@ -32,79 +33,78 @@ export class ModeButtons extends LitElement {
       display: block;
     }
 
-    .mode-buttons {
+    .mode-chips {
       display: flex;
       justify-content: center;
       gap: 8px;
       flex-wrap: wrap;
-      margin: 16px 0;
+      margin: 8px 0 16px;
     }
 
-    .mode-button {
+    .mode-chip {
       display: flex;
-      flex-direction: column;
       align-items: center;
-      padding: 8px 16px;
-      border-radius: 8px;
-      background: var(--ha-card-background, var(--card-background-color, #f5f5f5));
-      border: 1px solid var(--divider-color, #e0e0e0);
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
       cursor: pointer;
       transition: all 0.2s ease;
-      min-width: 60px;
+      font-size: 0.82em;
+      color: var(--primary-text-color, #fff);
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
     }
 
-    .mode-button:hover {
-      background: var(--primary-color, #03a9f4);
-      color: white;
-    }
-
-    .mode-button:hover ha-icon {
-      color: white;
-    }
-
-    .mode-button.active {
-      background: var(--primary-color, #03a9f4);
-      color: white;
-      border-color: var(--primary-color, #03a9f4);
-    }
-
-    .mode-button.active ha-icon {
-      color: white;
-    }
-
-    .mode-button ha-icon {
-      margin-bottom: 4px;
-      color: var(--primary-text-color, #212121);
+    .mode-chip ha-icon {
+      --mdc-icon-size: 18px;
+      color: var(--secondary-text-color, #aaa);
       transition: color 0.2s ease;
     }
 
-    .mode-name {
-      font-size: 0.75em;
-      text-transform: uppercase;
+    .mode-chip:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .mode-chip.active {
+      background: var(--primary-color, #03a9f4);
+      border-color: var(--primary-color, #03a9f4);
+      color: #fff;
+    }
+
+    .mode-chip.active ha-icon {
+      color: #fff;
+    }
+
+    .mode-chip:active {
+      transform: scale(0.95);
     }
 
     @media (max-width: 400px) {
-      .mode-buttons {
-        gap: 4px;
+      .mode-chips {
+        gap: 6px;
       }
 
-      .mode-button {
-        padding: 6px 12px;
-        min-width: 50px;
+      .mode-chip {
+        padding: 5px 10px;
+        font-size: 0.75em;
       }
     }
   `;
 
   protected render(): TemplateResult {
     return html`
-      <div class="mode-buttons">
+      <div class="mode-chips">
         ${this.modes.map(mode => html`
           <div
-            class="mode-button ${this.currentMode === mode ? 'active' : ''}"
+            class="mode-chip ${this.currentMode === mode ? 'active' : ''}"
             @click=${() => this._handleClick(mode)}
           >
             <ha-icon icon="${this._getModeIcon(mode)}"></ha-icon>
-            <span class="mode-name">${localize(`modes.${mode}`, this.lang) || mode}</span>
+            <span>${localize(`modes.${mode}`, this.lang) || mode}</span>
           </div>
         `)}
       </div>

@@ -20,7 +20,7 @@ import './components/humidity-circle';
 import './components/mode-buttons';
 
 // Card version
-const CARD_VERSION = '1.2.1';
+const CARD_VERSION = '2.0.0';
 
 console.info(
   `%c XIAOMI-HUMIDIFIER-CARD %c ${CARD_VERSION} `,
@@ -123,6 +123,7 @@ export class XiaomiHumidifierCard extends LitElement {
           .humidity=${humidity}
           .targetHumidity=${targetHumidity}
           .showTarget=${this._config.show_target_humidity !== false}
+          .isOn=${isOn}
           .onTargetChange=${(value: number) => this._handleTargetHumidityChange(value)}
         ></humidity-circle>
 

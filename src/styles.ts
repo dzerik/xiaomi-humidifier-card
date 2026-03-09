@@ -44,178 +44,9 @@ export const styles = css`
     color: var(--primary-color);
   }
 
-  /* Circular display */
-  .humidity-circle {
-    position: relative;
-    width: 200px;
-    height: 200px;
-    margin: 0 auto 16px;
-  }
+  /* Circular display — styles are inside humidity-circle component */
 
-  .humidity-circle svg {
-    width: 100%;
-    height: 100%;
-    transform: rotate(-90deg);
-  }
-
-  .humidity-circle .arc-background {
-    fill: none;
-    stroke: var(--arc-background);
-    stroke-width: 8;
-    stroke-linecap: round;
-  }
-
-  .humidity-circle .arc-progress {
-    fill: none;
-    stroke: var(--arc-color);
-    stroke-width: 8;
-    stroke-linecap: round;
-    transition: stroke-dashoffset 0.3s ease;
-  }
-
-  .humidity-circle .target-indicator {
-    fill: var(--primary-color);
-    stroke: var(--card-background);
-    stroke-width: 3;
-    cursor: grab;
-    transition: r 0.2s ease, fill 0.2s ease;
-    transform-origin: center;
-  }
-
-  .humidity-circle .target-indicator:hover {
-    r: 12;
-  }
-
-  .humidity-circle .target-indicator.dragging {
-    r: 14;
-    fill: var(--secondary-color);
-    cursor: grabbing;
-  }
-
-  .humidity-circle {
-    cursor: pointer;
-    touch-action: none;
-  }
-
-  .humidity-circle .target-humidity.dragging {
-    color: var(--primary-color);
-    font-weight: 500;
-  }
-
-  .humidity-circle .center-content {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    text-align: center;
-  }
-
-  .humidity-circle .current-humidity {
-    font-size: 2.5em;
-    font-weight: 500;
-    color: var(--text-color);
-    line-height: 1;
-  }
-
-  .humidity-circle .humidity-unit {
-    font-size: 0.8em;
-    color: var(--text-secondary-color);
-  }
-
-  .humidity-circle .target-humidity {
-    font-size: 1em;
-    color: var(--text-secondary-color);
-    margin-top: 4px;
-  }
-
-  .humidity-circle .humidity-icon {
-    font-size: 1.5em;
-    color: var(--primary-color);
-    margin-bottom: 4px;
-  }
-
-  /* Target humidity slider */
-  .target-slider {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: 16px 0;
-    padding: 0 8px;
-  }
-
-  .target-slider ha-icon-button {
-    --mdc-icon-button-size: 36px;
-    color: var(--text-secondary-color);
-  }
-
-  .target-slider input[type="range"] {
-    flex: 1;
-    height: 4px;
-    -webkit-appearance: none;
-    background: var(--arc-background);
-    border-radius: 2px;
-    outline: none;
-  }
-
-  .target-slider input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: var(--primary-color);
-    cursor: pointer;
-    border: 2px solid var(--card-background);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  }
-
-  .target-slider .value {
-    min-width: 40px;
-    text-align: center;
-    font-weight: 500;
-    color: var(--text-color);
-  }
-
-  /* Mode buttons */
-  .mode-buttons {
-    display: flex;
-    justify-content: center;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin: 16px 0;
-  }
-
-  .mode-button {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 8px 16px;
-    border-radius: 8px;
-    background: var(--ha-card-background, var(--card-background-color, #f5f5f5));
-    border: 1px solid var(--divider-color, #e0e0e0);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    min-width: 60px;
-  }
-
-  .mode-button:hover {
-    background: var(--primary-color);
-    color: white;
-  }
-
-  .mode-button.active {
-    background: var(--primary-color);
-    color: white;
-    border-color: var(--primary-color);
-  }
-
-  .mode-button ha-icon {
-    margin-bottom: 4px;
-  }
-
-  .mode-button .mode-name {
-    font-size: 0.75em;
-    text-transform: uppercase;
-  }
+  /* Mode buttons — styles are inside mode-buttons component */
 
   /* Switches row */
   .switches-row {
@@ -515,22 +346,8 @@ export const styles = css`
 
   /* Responsive styles */
   @media (max-width: 400px) {
-    .humidity-circle {
-      width: 160px;
-      height: 160px;
-    }
-
-    .humidity-circle .current-humidity {
-      font-size: 2em;
-    }
-
-    .mode-buttons {
-      gap: 4px;
-    }
-
-    .mode-button {
-      padding: 6px 12px;
-      min-width: 50px;
+    ha-card {
+      padding: 12px;
     }
 
     .switches-row {
@@ -539,17 +356,6 @@ export const styles = css`
 
     .switch-item {
       padding: 4px;
-    }
-  }
-
-  @media (min-width: 600px) {
-    .humidity-circle {
-      width: 240px;
-      height: 240px;
-    }
-
-    .humidity-circle .current-humidity {
-      font-size: 3em;
     }
   }
 `;
