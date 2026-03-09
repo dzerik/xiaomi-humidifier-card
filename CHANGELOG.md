@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.3.0] - 2026-03-09
+
+### Changed
+
+- Mode buttons redesigned as icon-only bar (matching HA thermostat card style)
+- Power button moved into mode bar as first button with pill highlight
+- Temperature displayed inside dial next to current humidity
+- Reduced card padding and dial margins for compact layout
+
 ## [2.2.0] - 2026-03-09
 
 ### Changed

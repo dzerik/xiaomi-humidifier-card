@@ -1,4 +1,4 @@
-import { LitElement, html, PropertyValues, TemplateResult, nothing } from 'lit';
+import { LitElement, html, PropertyValues, TemplateResult } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { styles } from './styles';
 import { localize, getLanguage } from './localize/localize';
@@ -18,7 +18,7 @@ import './components/humidity-circle';
 import './components/mode-buttons';
 
 // Card version
-const CARD_VERSION = '2.2.0';
+const CARD_VERSION = '2.3.0';
 
 console.info(
   `%c XIAOMI-HUMIDIFIER-CARD %c ${CARD_VERSION} `,
@@ -111,7 +111,7 @@ export class XiaomiHumidifierCard extends LitElement {
           isOn,
           this._config.show_name !== false,
           this._config.show_state !== false,
-          this._config.show_power !== false,
+          false,
           lang,
           () => this._handlePowerToggle(),
           ef.getSwitches(),
@@ -130,14 +130,14 @@ export class XiaomiHumidifierCard extends LitElement {
           .onTargetChange=${(value: number) => this._handleTargetHumidityChange(value)}
         ></humidity-circle>
 
-        ${this._config.show_mode ? html`
-          <mode-buttons
-            .modes=${ef.getAvailableModes()}
-            .currentMode=${ef.getCurrentMode()}
-            .lang=${lang}
-            .onModeChange=${(mode: string) => this._handleModeChange(mode)}
-          ></mode-buttons>
-        ` : nothing}
+        <mode-buttons
+          .modes=${this._config.show_mode !== false ? ef.getAvailableModes() : []}
+          .currentMode=${ef.getCurrentMode()}
+          .lang=${lang}
+          .isOn=${isOn}
+          .onModeChange=${(mode: string) => this._handleModeChange(mode)}
+          .onPowerToggle=${this._config.show_power !== false ? () => this._handlePowerToggle() : undefined}
+        ></mode-buttons>
 
         ${renderNumbers(ef.getNumbers(), lang, (id, value) => this._handleNumberChange(id, value))}
         ${renderSelects(ef.getSelects(), lang, (id, option) => this._handleSelectChange(id, option))}

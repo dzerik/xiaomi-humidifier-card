@@ -1,4 +1,4 @@
-import { LitElement, html, css, TemplateResult } from 'lit';
+import { LitElement, html, css, TemplateResult, nothing } from 'lit';
 import { property } from 'lit/decorators.js';
 import { localize } from '../localize/localize';
 
@@ -26,86 +26,113 @@ export class ModeButtons extends LitElement {
   @property({ type: Array }) public modes: string[] = [];
   @property({ type: String }) public currentMode?: string;
   @property({ type: String }) public lang = 'en';
+  @property({ type: Boolean }) public isOn = true;
   @property({ attribute: false }) public onModeChange?: (mode: string) => void;
+  @property({ attribute: false }) public onPowerToggle?: () => void;
 
   static styles = css`
     :host {
       display: block;
     }
 
-    .mode-chips {
+    .mode-bar {
       display: flex;
       justify-content: center;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin: 8px 0 16px;
-    }
-
-    .mode-chip {
-      display: flex;
       align-items: center;
       gap: 6px;
-      padding: 6px 14px;
-      border-radius: 18px;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 8px 0 4px;
+    }
+
+    .mode-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      border-radius: 22px;
+      background: transparent;
+      border: none;
       cursor: pointer;
       transition: all 0.2s ease;
-      font-size: 0.82em;
-      color: var(--primary-text-color, #fff);
       -webkit-tap-highlight-color: transparent;
       user-select: none;
       -webkit-user-select: none;
+      padding: 0;
     }
 
-    .mode-chip ha-icon {
-      --mdc-icon-size: 18px;
+    .mode-btn ha-icon {
+      --mdc-icon-size: 22px;
       color: var(--secondary-text-color, #aaa);
       transition: color 0.2s ease;
     }
 
-    .mode-chip:hover {
+    .mode-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .mode-btn:active {
+      transform: scale(0.9);
+    }
+
+    .mode-btn.active {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 22px;
+    }
+
+    .mode-btn.active ha-icon {
+      color: var(--primary-text-color, #fff);
+    }
+
+    /* Power button — first in row */
+    .mode-btn.power {
       background: rgba(255, 255, 255, 0.12);
-      border-color: rgba(255, 255, 255, 0.2);
+      border-radius: 22px;
     }
 
-    .mode-chip.active {
+    .mode-btn.power ha-icon {
+      color: var(--secondary-text-color, #aaa);
+    }
+
+    .mode-btn.power.on {
       background: var(--primary-color, #03a9f4);
-      border-color: var(--primary-color, #03a9f4);
-      color: #fff;
     }
 
-    .mode-chip.active ha-icon {
+    .mode-btn.power.on ha-icon {
       color: #fff;
-    }
-
-    .mode-chip:active {
-      transform: scale(0.95);
     }
 
     @media (max-width: 400px) {
-      .mode-chips {
-        gap: 6px;
+      .mode-btn {
+        width: 38px;
+        height: 38px;
       }
 
-      .mode-chip {
-        padding: 5px 10px;
-        font-size: 0.75em;
+      .mode-btn ha-icon {
+        --mdc-icon-size: 20px;
       }
     }
   `;
 
   protected render(): TemplateResult {
     return html`
-      <div class="mode-chips">
+      <div class="mode-bar">
+        ${this.onPowerToggle ? html`
+          <button
+            class="mode-btn power ${this.isOn ? 'on' : ''}"
+            @click=${() => this.onPowerToggle?.()}
+            title="${this.isOn ? localize('common.on', this.lang) : localize('common.off', this.lang)}"
+          >
+            <ha-icon icon="mdi:power"></ha-icon>
+          </button>
+        ` : nothing}
         ${this.modes.map(mode => html`
-          <div
-            class="mode-chip ${this.currentMode === mode ? 'active' : ''}"
+          <button
+            class="mode-btn ${this.currentMode === mode ? 'active' : ''}"
             @click=${() => this._handleClick(mode)}
+            title="${localize(`modes.${mode}`, this.lang) || mode}"
           >
             <ha-icon icon="${this._getModeIcon(mode)}"></ha-icon>
-            <span>${localize(`modes.${mode}`, this.lang) || mode}</span>
-          </div>
+          </button>
         `)}
       </div>
     `;
