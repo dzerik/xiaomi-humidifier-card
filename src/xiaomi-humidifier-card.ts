@@ -124,6 +124,7 @@ export class XiaomiHumidifierCard extends LitElement {
           .hass=${this.hass}
           .humidity=${humidity}
           .targetHumidity=${targetHumidity}
+          .temperature=${temperature}
           .showTarget=${this._config.show_target_humidity !== false}
           .isOn=${isOn}
           .onTargetChange=${(value: number) => this._handleTargetHumidityChange(value)}
@@ -141,7 +142,7 @@ export class XiaomiHumidifierCard extends LitElement {
         ${renderNumbers(ef.getNumbers(), lang, (id, value) => this._handleNumberChange(id, value))}
         ${renderSelects(ef.getSelects(), lang, (id, option) => this._handleSelectChange(id, option))}
         ${renderButtons(ef.getButtons(), lang, (id) => this._handleButtonPress(id))}
-        ${renderSensors(ef.getSensors(), temperature)}
+        ${renderSensors(ef.getSensors())}
       </ha-card>
     `;
   }

@@ -103,6 +103,7 @@ export class HumidityCircle extends LitElement {
   @property({ type: Number }) public targetHumidity?: number;
   @property({ type: Boolean }) public showTarget = true;
   @property({ type: Boolean }) public isOn = true;
+  @property({ type: Number }) public temperature?: number;
   @property({ attribute: false }) public onTargetChange?: (value: number) => void;
 
   @state() private _isDragging = false;
@@ -121,7 +122,7 @@ export class HumidityCircle extends LitElement {
       position: relative;
       width: 330px;
       height: 330px;
-      margin: 8px auto 16px;
+      margin: 0 auto 4px;
       touch-action: none;
       user-select: none;
       -webkit-user-select: none;
@@ -242,18 +243,23 @@ export class HumidityCircle extends LitElement {
       vertical-align: super;
     }
 
-    .current-value {
-      font-size: 0.85em;
-      color: var(--secondary-text-color, #aaa);
-      margin-top: 4px;
+    .current-readings {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 4px;
-      transition: color 0.3s ease;
+      gap: 12px;
+      margin-top: 4px;
+      font-size: 0.85em;
+      color: var(--secondary-text-color, #aaa);
     }
 
-    .current-value ha-icon {
+    .reading {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .reading ha-icon {
       --mdc-icon-size: 16px;
     }
 
@@ -434,10 +440,20 @@ export class HumidityCircle extends LitElement {
             ${hasTarget ? displayTarget : '--'}
             <span class="target-unit">%</span>
           </div>
-          ${hasCurrent ? html`
-            <div class="current-value">
-              <ha-icon icon="mdi:water"></ha-icon>
-              ${this.humidity}%
+          ${hasCurrent || this.temperature !== undefined ? html`
+            <div class="current-readings">
+              ${hasCurrent ? html`
+                <span class="reading">
+                  <ha-icon icon="mdi:water"></ha-icon>
+                  ${this.humidity}%
+                </span>
+              ` : nothing}
+              ${this.temperature !== undefined ? html`
+                <span class="reading">
+                  <ha-icon icon="mdi:thermometer"></ha-icon>
+                  ${this.temperature}°C
+                </span>
+              ` : nothing}
             </div>
           ` : nothing}
           ${hasTarget && this.showTarget ? html`

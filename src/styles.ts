@@ -13,7 +13,7 @@ export const styles = css`
   }
 
   ha-card {
-    padding: 16px;
+    padding: 12px 16px 8px;
     box-sizing: border-box;
   }
 
@@ -21,7 +21,7 @@ export const styles = css`
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 8px;
+    margin-bottom: 0;
   }
 
   .header-left {
