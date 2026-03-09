@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.0.1] - 2026-03-09
+
+### Fixed
+
+- Arc "dancing/stretching" during drag — disabled CSS path transition while dragging for instant response
+
 ## [2.0.0] - 2026-03-09
 
 ### Breaking Changes

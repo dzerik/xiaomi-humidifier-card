@@ -20,7 +20,7 @@ import './components/humidity-circle';
 import './components/mode-buttons';
 
 // Card version
-const CARD_VERSION = '2.0.0';
+const CARD_VERSION = '2.0.1';
 
 console.info(
   `%c XIAOMI-HUMIDIFIER-CARD %c ${CARD_VERSION} `,

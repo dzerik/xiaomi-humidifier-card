@@ -1,6 +1,6 @@
 {
   "name": "xiaomi-humidifier-card",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "type": "module",
   "description": "Thermostat-style humidifier card for Home Assistant",
   "main": "dist/xiaomi-humidifier-card.js",
