@@ -152,6 +152,10 @@ export class HumidityCircle extends LitElement {
       filter: drop-shadow(0 0 4px var(--arc-glow, rgba(3, 169, 244, 0.3)));
     }
 
+    .arc-progress.dragging {
+      transition: stroke 0.3s ease;
+    }
+
     /* Tick marks */
     .tick {
       stroke: var(--secondary-text-color, rgba(255, 255, 255, 0.3));
@@ -427,7 +431,7 @@ export class HumidityCircle extends LitElement {
           <!-- Progress arc -->
           ${progressArc ? svg`
             <path
-              class="arc-progress"
+              class="arc-progress ${this._isDragging ? 'dragging' : ''}"
               d="${progressArc}"
               stroke="${arcColor}"
               style="--arc-glow: ${arcColor}40"
