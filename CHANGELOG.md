@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.2.0] - 2026-03-09
+
+### Changed
+
+- Removed colored progress arc — cleaner minimal design
+- Target humidity number now colored by humidity level (orange → yellow → green → blue)
+- Thumb colored to match target humidity level
+- Circle dial enlarged 1.5× (330px default, 270px mobile, 390px desktop)
+- Larger target value font (4em default, 4.5em desktop)
+
 ## [2.1.0] - 2026-03-09
 
 ### Added

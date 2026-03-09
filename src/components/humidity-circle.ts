@@ -7,7 +7,6 @@ import { HomeAssistant } from '../types';
 const SVG_SIZE = 200;
 const CENTER = SVG_SIZE / 2;
 const RADIUS = 78;
-const STROKE_WIDTH = 10;
 const STROKE_BG = 6;
 const START_ANGLE = 135;   // 7:30 position (degrees)
 const END_ANGLE = 405;     // 4:30 position (degrees)
@@ -120,8 +119,8 @@ export class HumidityCircle extends LitElement {
 
     .circle-container {
       position: relative;
-      width: 220px;
-      height: 220px;
+      width: 330px;
+      height: 330px;
       margin: 8px auto 16px;
       touch-action: none;
       user-select: none;
@@ -141,15 +140,6 @@ export class HumidityCircle extends LitElement {
       stroke-width: ${STROKE_BG};
       stroke-linecap: round;
       opacity: 0.3;
-    }
-
-    /* Progress arc */
-    .arc-progress {
-      fill: none;
-      stroke-width: ${STROKE_WIDTH};
-      stroke-linecap: round;
-      transition: d 0.5s ease, stroke 0.15s ease;
-      filter: drop-shadow(0 0 4px var(--arc-glow, rgba(3, 169, 244, 0.3)));
     }
 
     /* Tick marks */
@@ -187,12 +177,11 @@ export class HumidityCircle extends LitElement {
 
     /* Thumb (target indicator) */
     .thumb {
-      fill: #fff;
       stroke: var(--ha-card-background, var(--card-background-color, #111));
       stroke-width: 3;
       cursor: grab;
       filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
-      transition: r 0.15s ease, filter 0.15s ease;
+      transition: r 0.15s ease, filter 0.15s ease, fill 0.2s ease;
     }
 
     .thumb:hover {
@@ -240,17 +229,16 @@ export class HumidityCircle extends LitElement {
     }
 
     .target-value {
-      font-size: 3.2em;
+      font-size: 4em;
       font-weight: 300;
       line-height: 1;
-      color: var(--primary-text-color, #fff);
-      transition: color 0.3s ease;
+      transition: color 0.2s ease;
     }
 
     .target-unit {
       font-size: 0.35em;
       font-weight: 400;
-      color: var(--secondary-text-color, #aaa);
+      opacity: 0.7;
       vertical-align: super;
     }
 
@@ -308,7 +296,6 @@ export class HumidityCircle extends LitElement {
     }
 
     /* Off state */
-    .circle-container.off .arc-progress,
     .circle-container.off .current-marker,
     .circle-container.off .current-marker-glow,
     .circle-container.off .thumb {
@@ -317,45 +304,39 @@ export class HumidityCircle extends LitElement {
     }
 
     .circle-container.off .target-value {
-      color: var(--disabled-text-color, #666);
+      color: var(--disabled-text-color, #666) !important;
     }
 
     .circle-container.off .status-text {
       color: var(--disabled-text-color, #666);
     }
 
-    /* Dragging state — highlight target value */
-    .target-value.dragging {
-      color: var(--primary-color, #03a9f4);
-      transition: color 0.1s ease;
-    }
-
     /* Responsive */
     @media (max-width: 400px) {
       .circle-container {
-        width: 180px;
-        height: 180px;
+        width: 270px;
+        height: 270px;
       }
 
       .target-value {
-        font-size: 2.6em;
+        font-size: 3em;
       }
 
       .adjust-btn {
-        width: 34px;
-        height: 34px;
-        font-size: 1.2em;
+        width: 36px;
+        height: 36px;
+        font-size: 1.3em;
       }
     }
 
     @media (min-width: 600px) {
       .circle-container {
-        width: 260px;
-        height: 260px;
+        width: 390px;
+        height: 390px;
       }
 
       .target-value {
-        font-size: 3.8em;
+        font-size: 4.5em;
       }
     }
   `;
@@ -371,20 +352,10 @@ export class HumidityCircle extends LitElement {
     const hasTarget = displayTarget !== undefined;
     const hasCurrent = this.humidity !== undefined;
 
-    // Arc paths
+    // Arc path (background only, no progress arc)
     const bgArc = describeArc(START_ANGLE, END_ANGLE);
 
-    // During drag: arc stays at committed targetHumidity, only color follows temp.
-    // After drag: arc animates to new value via CSS transition.
-    const arcValue = this._isDragging
-      ? (this.targetHumidity ?? displayTarget!)
-      : displayTarget!;
-    const arcAngle = hasTarget ? valueToAngle(arcValue) : START_ANGLE;
-    const progressArc = hasTarget && arcAngle > START_ANGLE
-      ? describeArc(START_ANGLE, arcAngle)
-      : '';
-
-    // Thumb always follows displayTarget (moves instantly during drag)
+    // Thumb follows displayTarget
     const thumbAngle = hasTarget ? valueToAngle(displayTarget!) : START_ANGLE;
     const thumbPos = hasTarget ? polarToCartesian(thumbAngle) : null;
 
@@ -392,10 +363,10 @@ export class HumidityCircle extends LitElement {
     const currentAngle = hasCurrent ? valueToAngle(this.humidity!) : 0;
     const currentPos = hasCurrent ? polarToCartesian(currentAngle) : null;
 
-    // Color always follows displayTarget (instant feedback)
-    const arcColor = hasTarget
+    // Color based on target humidity — applied to number and thumb
+    const targetColor = hasTarget
       ? getHumidityColorSmooth(displayTarget!)
-      : 'var(--primary-color, #03a9f4)';
+      : 'var(--primary-text-color, #fff)';
 
     // Status text
     const statusText = this.isOn
@@ -429,16 +400,6 @@ export class HumidityCircle extends LitElement {
             `;
           })}
 
-          <!-- Progress arc -->
-          ${progressArc ? svg`
-            <path
-              class="arc-progress"
-              d="${progressArc}"
-              stroke="${arcColor}"
-              style="--arc-glow: ${arcColor}40"
-            />
-          ` : nothing}
-
           <!-- Current humidity marker -->
           ${hasCurrent && this.isOn && currentPos ? svg`
             <circle
@@ -462,13 +423,14 @@ export class HumidityCircle extends LitElement {
               cx="${thumbPos.x}"
               cy="${thumbPos.y}"
               r="${THUMB_R}"
+              fill="${targetColor}"
             />
           ` : nothing}
         </svg>
 
         <div class="center-content">
           <div class="status-text">${statusText}</div>
-          <div class="target-value ${this._isDragging ? 'dragging' : ''}">
+          <div class="target-value" style="color: ${targetColor}">
             ${hasTarget ? displayTarget : '--'}
             <span class="target-unit">%</span>
           </div>
