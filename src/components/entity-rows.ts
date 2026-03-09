@@ -188,7 +188,7 @@ export function renderStatusIndicators(
 }
 
 /**
- * Render card header
+ * Render card header with switches column and status indicators
  */
 export function renderHeader(
   name: string,
@@ -197,26 +197,75 @@ export function renderHeader(
   showState: boolean,
   showPower: boolean,
   lang: string,
-  onPowerToggle: () => void
+  onPowerToggle: () => void,
+  switches: SwitchInfo[] = [],
+  showSwitches: boolean = true,
+  onSwitchToggle?: (entityId: string, currentState: string) => void,
+  waterStatus: WaterStatus | null = null,
 ): TemplateResult {
   return html`
     <div class="card-header">
-      <div>
+      <div class="header-left">
         ${showName ? html`<div class="name">${name}</div>` : nothing}
         ${showState ? html`
           <div class="state">
             ${isOn ? localize('common.on', lang) : localize('common.off', lang)}
           </div>
         ` : nothing}
+        ${waterStatus ? renderHeaderStatus(waterStatus, lang) : nothing}
       </div>
-      ${showPower ? html`
-        <ha-icon-button
-          class="power-button ${isOn ? 'on' : ''}"
-          @click=${onPowerToggle}
-        >
-          <ha-icon icon="mdi:power"></ha-icon>
-        </ha-icon-button>
-      ` : nothing}
+      <div class="header-right">
+        ${showPower ? html`
+          <ha-icon-button
+            class="power-button ${isOn ? 'on' : ''}"
+            @click=${onPowerToggle}
+          >
+            <ha-icon icon="mdi:power"></ha-icon>
+          </ha-icon-button>
+        ` : nothing}
+        ${showSwitches && switches.length > 0 ? html`
+          <div class="header-switches">
+            ${switches.map(sw => html`
+              <div
+                class="header-switch ${sw.entity.state === 'on' ? 'on' : ''}"
+                @click=${() => onSwitchToggle?.(sw.entity.entity_id, sw.entity.state)}
+                title="${localize(`switches.${sw.id}`, lang) || sw.name}"
+              >
+                <ha-icon icon="${sw.icon}"></ha-icon>
+              </div>
+            `)}
+          </div>
+        ` : nothing}
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * Render status indicator inside header
+ */
+function renderHeaderStatus(
+  waterStatus: WaterStatus,
+  lang: string
+): TemplateResult {
+  let statusClass = 'ok';
+  let statusKey = 'water_tank_ok';
+
+  if (waterStatus.id === 'no_water') {
+    statusClass = 'error';
+    statusKey = 'no_water';
+  } else if (waterStatus.id === 'water_tank_detached') {
+    statusClass = 'warning';
+    statusKey = 'water_tank_missing';
+  } else if (waterStatus.id === 'water_shortage') {
+    statusClass = 'error';
+    statusKey = 'water_shortage';
+  }
+
+  return html`
+    <div class="header-status ${statusClass}">
+      <ha-icon icon="${waterStatus.icon}"></ha-icon>
+      <span>${localize(`status.${statusKey}`, lang)}</span>
     </div>
   `;
 }

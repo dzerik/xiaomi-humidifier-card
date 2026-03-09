@@ -148,12 +148,8 @@ export class HumidityCircle extends LitElement {
       fill: none;
       stroke-width: ${STROKE_WIDTH};
       stroke-linecap: round;
-      transition: d 0.6s ease, stroke 0.5s ease;
+      transition: d 0.5s ease, stroke 0.15s ease;
       filter: drop-shadow(0 0 4px var(--arc-glow, rgba(3, 169, 244, 0.3)));
-    }
-
-    .arc-progress.dragging {
-      transition: stroke 0.3s ease;
     }
 
     /* Tick marks */
@@ -378,20 +374,25 @@ export class HumidityCircle extends LitElement {
     // Arc paths
     const bgArc = describeArc(START_ANGLE, END_ANGLE);
 
-    // Progress arc (target humidity)
-    const targetAngle = hasTarget ? valueToAngle(displayTarget!) : START_ANGLE;
-    const progressArc = hasTarget && targetAngle > START_ANGLE
-      ? describeArc(START_ANGLE, targetAngle)
+    // During drag: arc stays at committed targetHumidity, only color follows temp.
+    // After drag: arc animates to new value via CSS transition.
+    const arcValue = this._isDragging
+      ? (this.targetHumidity ?? displayTarget!)
+      : displayTarget!;
+    const arcAngle = hasTarget ? valueToAngle(arcValue) : START_ANGLE;
+    const progressArc = hasTarget && arcAngle > START_ANGLE
+      ? describeArc(START_ANGLE, arcAngle)
       : '';
 
-    // Thumb position
-    const thumbPos = hasTarget ? polarToCartesian(targetAngle) : null;
+    // Thumb always follows displayTarget (moves instantly during drag)
+    const thumbAngle = hasTarget ? valueToAngle(displayTarget!) : START_ANGLE;
+    const thumbPos = hasTarget ? polarToCartesian(thumbAngle) : null;
 
     // Current humidity marker position
     const currentAngle = hasCurrent ? valueToAngle(this.humidity!) : 0;
     const currentPos = hasCurrent ? polarToCartesian(currentAngle) : null;
 
-    // Color
+    // Color always follows displayTarget (instant feedback)
     const arcColor = hasTarget
       ? getHumidityColorSmooth(displayTarget!)
       : 'var(--primary-color, #03a9f4)';
@@ -431,7 +432,7 @@ export class HumidityCircle extends LitElement {
           <!-- Progress arc -->
           ${progressArc ? svg`
             <path
-              class="arc-progress ${this._isDragging ? 'dragging' : ''}"
+              class="arc-progress"
               d="${progressArc}"
               stroke="${arcColor}"
               style="--arc-glow: ${arcColor}40"

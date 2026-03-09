@@ -6,12 +6,10 @@ import { HomeAssistant, XiaomiHumidifierCardConfig } from './types';
 import { EntityFinder } from './utils/entity-finder';
 import {
   renderHeader,
-  renderSwitches,
   renderSensors,
   renderNumbers,
   renderSelects,
   renderButtons,
-  renderStatusIndicators,
 } from './components/entity-rows';
 
 // Import components to register them
@@ -20,7 +18,7 @@ import './components/humidity-circle';
 import './components/mode-buttons';
 
 // Card version
-const CARD_VERSION = '2.0.1';
+const CARD_VERSION = '2.1.0';
 
 console.info(
   `%c XIAOMI-HUMIDIFIER-CARD %c ${CARD_VERSION} `,
@@ -115,7 +113,11 @@ export class XiaomiHumidifierCard extends LitElement {
           this._config.show_state !== false,
           this._config.show_power !== false,
           lang,
-          () => this._handlePowerToggle()
+          () => this._handlePowerToggle(),
+          ef.getSwitches(),
+          this._config.show_switches !== false,
+          (id, state) => this._handleSwitchToggle(id, state),
+          ef.getWaterStatus(),
         )}
 
         <humidity-circle
@@ -136,12 +138,10 @@ export class XiaomiHumidifierCard extends LitElement {
           ></mode-buttons>
         ` : nothing}
 
-        ${renderSwitches(ef.getSwitches(), lang, (id, state) => this._handleSwitchToggle(id, state))}
         ${renderNumbers(ef.getNumbers(), lang, (id, value) => this._handleNumberChange(id, value))}
         ${renderSelects(ef.getSelects(), lang, (id, option) => this._handleSelectChange(id, option))}
         ${renderButtons(ef.getButtons(), lang, (id) => this._handleButtonPress(id))}
         ${renderSensors(ef.getSensors(), temperature)}
-        ${renderStatusIndicators(ef.getWaterStatus(), lang)}
       </ha-card>
     `;
   }

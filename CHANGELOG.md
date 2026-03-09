@@ -1,10 +1,20 @@
 # Changelog
 
-## [2.0.1] - 2026-03-09
+## [2.1.0] - 2026-03-09
+
+### Added
+
+- Switches (buzzer, LED, child lock) moved to header — vertical column under power button
+- Water status / error indicators moved to header — under on/off state text
+
+### Changed
+
+- Header layout: two-column design (left: name/state/status, right: power/switches)
+- Switches and status indicators removed from bottom of card for cleaner layout
 
 ### Fixed
 
-- Arc "dancing/stretching" during drag — disabled CSS path transition while dragging for instant response
+- Arc drag: arc stays fixed during drag, only thumb + color update instantly; arc animates smoothly after release
 
 ## [2.0.0] - 2026-03-09
 

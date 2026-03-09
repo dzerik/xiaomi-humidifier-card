@@ -20,14 +20,33 @@ export const styles = css`
   .card-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
+    align-items: flex-start;
+    margin-bottom: 8px;
+  }
+
+  .header-left {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .header-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    flex-shrink: 0;
   }
 
   .card-header .name {
     font-size: 1.2em;
     font-weight: 500;
     color: var(--text-color);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .card-header .state {
@@ -44,49 +63,70 @@ export const styles = css`
     color: var(--primary-color);
   }
 
-  /* Circular display — styles are inside humidity-circle component */
-
-  /* Mode buttons — styles are inside mode-buttons component */
-
-  /* Switches row */
-  .switches-row {
-    display: flex;
-    justify-content: center;
-    gap: 16px;
-    flex-wrap: wrap;
-    padding: 12px 0;
-    border-top: 1px solid var(--divider-color, #e0e0e0);
-  }
-
-  .switch-item {
+  /* Header switches (vertical column under power button) */
+  .header-switches {
     display: flex;
     flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+  }
+
+  .header-switch {
+    display: flex;
     align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
     cursor: pointer;
-    padding: 8px;
-    border-radius: 8px;
-    transition: background 0.2s ease;
+    transition: all 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
   }
 
-  .switch-item:hover {
-    background: rgba(0, 0, 0, 0.05);
-  }
-
-  .switch-item ha-icon {
+  .header-switch ha-icon {
+    --mdc-icon-size: 18px;
     color: var(--disabled-color);
     transition: color 0.2s ease;
   }
 
-  .switch-item.on ha-icon {
+  .header-switch:hover {
+    background: rgba(0, 0, 0, 0.05);
+  }
+
+  .header-switch.on ha-icon {
     color: var(--primary-color);
   }
 
-  .switch-item .switch-name {
-    font-size: 0.7em;
-    color: var(--text-secondary-color);
+  /* Header status indicators (under state text) */
+  .header-status {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.8em;
     margin-top: 4px;
-    text-align: center;
   }
+
+  .header-status ha-icon {
+    --mdc-icon-size: 16px;
+  }
+
+  .header-status.warning {
+    color: var(--warning-color, #ff9800);
+  }
+
+  .header-status.error {
+    color: var(--error-color, #f44336);
+  }
+
+  .header-status.ok {
+    color: var(--success-color, #4caf50);
+  }
+
+  /* Circular display — styles are inside humidity-circle component */
+
+  /* Mode buttons — styles are inside mode-buttons component */
+
+  /* Legacy switches row (kept for compatibility) */
 
   /* Sensors row */
   .sensors-row {
@@ -305,32 +345,7 @@ export const styles = css`
     color: white;
   }
 
-  /* Status indicators */
-  .status-indicators {
-    display: flex;
-    justify-content: center;
-    gap: 16px;
-    margin-top: 8px;
-  }
-
-  .status-indicator {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 0.85em;
-  }
-
-  .status-indicator.warning {
-    color: var(--warning-color, #ff9800);
-  }
-
-  .status-indicator.error {
-    color: var(--error-color, #f44336);
-  }
-
-  .status-indicator.ok {
-    color: var(--success-color, #4caf50);
-  }
+  /* Legacy status indicators (moved to header) */
 
   /* Unavailable state */
   .unavailable {
